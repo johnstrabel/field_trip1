@@ -1,0 +1,101 @@
+// lib/screens/trip_list_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../models/trip.dart' as model;
+import 'create_trip_screen.dart';
+import 'trip_detail_screen.dart';
+import 'badge_wall_screen.dart';
+
+class TripListScreen extends StatelessWidget {
+  const TripListScreen({Key? key}) : super(key: key);
+
+  void _openBadgeWall(BuildContext context) {
+    final badgeBox = Hive.box<model.Badge>('badges');
+    final badges = badgeBox.values.toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BadgeWallScreen(badges: badges),
+      ),
+    );
+  }
+
+  Future<void> _addNewTrip(BuildContext context) async {
+    final tripBox = Hive.box<model.Trip>('trips');
+    final model.Trip? newTrip = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CreateTripScreen()),
+    );
+    if (newTrip != null) {
+      tripBox.put(newTrip.id, newTrip);
+    }
+  }
+
+  Future<void> _openTripDetail(BuildContext context, model.Trip trip) async {
+    final badgeBox = Hive.box<model.Badge>('badges');
+    final model.Badge? earned = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => TripDetailScreen(trip: trip)),
+    );
+    if (earned != null) {
+      badgeBox.put(earned.id, earned);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tripBox = Hive.box<model.Trip>('trips');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your Trips'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.emoji_events),
+            tooltip: 'Badge Wall',
+            onPressed: () => _openBadgeWall(context),
+          ),
+        ],
+      ),
+      body: ValueListenableBuilder(
+        valueListenable: tripBox.listenable(),
+        builder: (context, Box<model.Trip> box, _) {
+          final trips = box.values.toList();
+          if (trips.isEmpty) {
+            return const Center(
+              child: Text(
+                'No trips yet!',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            itemCount: trips.length,
+            itemBuilder: (ctx, i) {
+              final trip = trips[i];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  title: Text(trip.title),
+                  subtitle: Text(
+                    '${trip.waypoints.length} waypoint${trip.waypoints.length == 1 ? '' : 's'} • '
+                    '${trip.type.toString().split('.').last.toUpperCase()}',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _openTripDetail(context, trip),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addNewTrip(context),
+        tooltip: 'Create Trip',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
