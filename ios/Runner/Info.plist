@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Feild Trip1</string>
+	<string>Field Trip</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>feild_trip1</string>
+	<string>field_trip1</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Location Permissions for Field Trip GPS Features -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Field Trip needs location access to create GPS-based trips and track your exploration routes.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Field Trip needs location access to track your trips and create exploration routes.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Field Trip needs location access to track your trips even when the app is in the background.</string>
 </dict>
 </plist>
