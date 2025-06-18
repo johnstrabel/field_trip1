@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/trip.dart' as model;
 import 'models/trail_data.dart' as trail;
+import 'theme/app_theme.dart';  // ← ADD THIS IMPORT
 import 'screens/main_navigation_screen.dart';
 
 Future<void> main() async {
@@ -60,24 +61,7 @@ class FieldTripApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Field Trip',
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-      ),
+      theme: AppTheme.lightTheme,  // ← REPLACE OLD THEME WITH THIS
       home: const MainNavigationScreen(),
     );
   }
