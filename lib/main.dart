@@ -21,15 +21,22 @@ Future<void> main() async {
     await Hive.openBox<model.Badge>('badges');
   } catch (e) {
     // If there's an error opening boxes (due to schema changes), clear them
-    print('Error opening boxes, clearing data: $e');
+    debugPrint('Error opening boxes, clearing data: $e');
     
-    // Delete the old boxes
-    await Hive.deleteBoxFromDisk('trips');
-    await Hive.deleteBoxFromDisk('badges');
-    
-    // Open fresh boxes
-    await Hive.openBox<model.Trip>('trips');
-    await Hive.openBox<model.Badge>('badges');
+    try {
+      // Delete the old boxes
+      await Hive.deleteBoxFromDisk('trips');
+      await Hive.deleteBoxFromDisk('badges');
+      
+      // Open fresh boxes
+      await Hive.openBox<model.Trip>('trips');
+      await Hive.openBox<model.Badge>('badges');
+      
+      debugPrint('Successfully reset Hive boxes');
+    } catch (resetError) {
+      debugPrint('Error resetting boxes: $resetError');
+      // Continue anyway - boxes will be created on first access
+    }
   }
 
   runApp(const FieldTripApp());

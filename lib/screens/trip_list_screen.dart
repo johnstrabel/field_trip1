@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/trip.dart' as model;
-import 'create_trip_screen.dart';
+import 'map_trip_creation_screen.dart';
 import 'trip_detail_screen.dart';
 import 'badge_wall_screen.dart';
 
@@ -25,7 +25,7 @@ class TripListScreen extends StatelessWidget {
     final tripBox = Hive.box<model.Trip>('trips');
     final model.Trip? newTrip = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => CreateTripScreen()),
+      MaterialPageRoute(builder: (_) => const MapTripCreationScreen()),
     );
     if (newTrip != null) {
       tripBox.put(newTrip.id, newTrip);
@@ -83,7 +83,16 @@ class TripListScreen extends StatelessWidget {
                     '${trip.waypoints.length} waypoint${trip.waypoints.length == 1 ? '' : 's'} • '
                     '${trip.type.toString().split('.').last.toUpperCase()}',
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (trip.completed)
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                      if (trip.badgeEarned)
+                        const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
                   onTap: () => _openTripDetail(context, trip),
                 ),
               );

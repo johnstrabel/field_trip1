@@ -6,55 +6,6 @@ part of 'trip.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class TripTypeAdapter extends TypeAdapter<TripType> {
-  @override
-  final int typeId = 0;
-
-  @override
-  TripType read(BinaryReader reader) {
-    switch (reader.readByte()) {
-      case 0:
-        return TripType.standard;
-      case 1:
-        return TripType.challenge;
-      case 2:
-        return TripType.barcrawl;
-      case 3:
-        return TripType.fitness;
-      default:
-        return TripType.standard;
-    }
-  }
-
-  @override
-  void write(BinaryWriter writer, TripType obj) {
-    switch (obj) {
-      case TripType.standard:
-        writer.writeByte(0);
-        break;
-      case TripType.challenge:
-        writer.writeByte(1);
-        break;
-      case TripType.barcrawl:
-        writer.writeByte(2);
-        break;
-      case TripType.fitness:
-        writer.writeByte(3);
-        break;
-    }
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TripTypeAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
-}
-
 class WaypointAdapter extends TypeAdapter<Waypoint> {
   @override
   final int typeId = 1;
@@ -192,6 +143,55 @@ class BadgeAdapter extends TypeAdapter<Badge> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is BadgeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class TripTypeAdapter extends TypeAdapter<TripType> {
+  @override
+  final int typeId = 0;
+
+  @override
+  TripType read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return TripType.standard;
+      case 1:
+        return TripType.challenge;
+      case 2:
+        return TripType.barcrawl;
+      case 3:
+        return TripType.fitness;
+      default:
+        return TripType.standard;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, TripType obj) {
+    switch (obj) {
+      case TripType.standard:
+        writer.writeByte(0);
+        break;
+      case TripType.challenge:
+        writer.writeByte(1);
+        break;
+      case TripType.barcrawl:
+        writer.writeByte(2);
+        break;
+      case TripType.fitness:
+        writer.writeByte(3);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TripTypeAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
