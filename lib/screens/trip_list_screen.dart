@@ -10,17 +10,6 @@ import 'badge_wall_screen.dart';
 class TripListScreen extends StatelessWidget {
   const TripListScreen({Key? key}) : super(key: key);
 
-  void _openBadgeWall(BuildContext context) {
-    final badgeBox = Hive.box<model.Badge>('badges');
-    final badges = badgeBox.values.toList();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BadgeWallScreen(badges: badges),
-      ),
-    );
-  }
-
   Future<void> _addNewTrip(BuildContext context) async {
     final tripBox = Hive.box<model.Trip>('trips');
     final model.Trip? newTrip = await Navigator.push(
@@ -50,13 +39,8 @@ class TripListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Trips'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.emoji_events),
-            tooltip: 'Badge Wall',
-            onPressed: () => _openBadgeWall(context),
-          ),
-        ],
+        automaticallyImplyLeading: false,
+        // Removed the actions section - no more redundant badge button!
       ),
       body: ValueListenableBuilder(
         valueListenable: tripBox.listenable(),
