@@ -4,14 +4,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class HeroBanner extends StatelessWidget {
-  final VoidCallback onCreateTrip;
-  final VoidCallback onJoinChallenge;
-
-  const HeroBanner({
-    Key? key,
-    required this.onCreateTrip,
-    required this.onJoinChallenge,
-  }) : super(key: key);
+  // Removed onCreateTrip and onJoinChallenge callbacks since we're removing the buttons
+  const HeroBanner({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -74,48 +68,15 @@ class HeroBanner extends StatelessWidget {
             ],
           ),
           
-          const SizedBox(height: AppDimensions.spaceXL),
+          const SizedBox(height: AppDimensions.spaceM),
           
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: onCreateTrip,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.amethyst600,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                    ),
-                  ),
-                  icon: const Icon(Icons.add_location, size: 20),
-                  label: const Text(
-                    'Create Trip',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceM),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onJoinChallenge,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white, width: 2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                    ),
-                  ),
-                  icon: const Icon(Icons.emoji_events, size: 20),
-                  label: const Text(
-                    'Join Challenge',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
+          // Additional motivational text (replacing the buttons)
+          Text(
+            'Discover new places, track your adventures, and collect badges as you explore the world around you.',
+            style: AppTextStyles.heroSubtitle.copyWith(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
+            ),
           ),
         ],
       ),

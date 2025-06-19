@@ -14,35 +14,14 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  String _selectedFilter = 'Filter 1';
-  final List<String> _filterOptions = ['Filter 1', 'Filter 2', 'Filter 3'];
-
-  Future<void> _createNewTrip(BuildContext context) async {
-    final tripBox = Hive.box<model.Trip>('trips');
-    final model.Trip? newTrip = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const MapTripCreationScreen()),
-    );
-    if (newTrip != null) {
-      tripBox.put(newTrip.id, newTrip);
-    }
-  }
-
-  void _joinChallenge() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Joining weekly challenge...'),
-        backgroundColor: AppColors.amethyst600,
-      ),
-    );
-  }
+  // Removed _selectedFilter and _filterOptions since we're removing filter chips
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Discover'), // Changed from 'Dashboard' to 'Discover'
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -51,33 +30,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.all(AppDimensions.spaceL),
         child: Column(
           children: [
-            // Hero Banner
+            // Hero Banner (updated to remove action buttons)
             _buildHeroBanner(),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Filter Chips
-            _buildFilterChips(),
+            // Discovery Section Header (new)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Discover',
+                  style: AppTextStyles.sectionTitle,
+                ),
+                TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Full discovery map coming soon!'),
+                        backgroundColor: AppColors.amethyst600,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'View All',
+                    style: TextStyle(
+                      color: AppColors.amethyst600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             
-            const SizedBox(height: AppDimensions.spaceL),
+            const SizedBox(height: AppDimensions.spaceM),
             
-            // Discovery Card
+            // Discovery Card (keeping your existing implementation) - Filter chips removed!
             _buildDiscoveryCard(),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Friends Activity
-            _buildFriendsActivity(),
+            // Friends Activity Section (updated with header)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Friends Activity',
+                      style: AppTextStyles.sectionTitle,
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Friends management coming soon!'),
+                            backgroundColor: AppColors.amethyst600,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Manage',
+                        style: TextStyle(
+                          color: AppColors.amethyst600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppDimensions.spaceM),
+                _buildFriendsActivity(),
+              ],
+            ),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Progress Snapshot
-            _buildProgressSnapshot(),
+            // Progress Snapshot Section (updated with header)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Progress',
+                  style: AppTextStyles.sectionTitle,
+                ),
+                const SizedBox(height: AppDimensions.spaceM),
+                _buildProgressSnapshot(),
+              ],
+            ),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Weekly Challenge
-            _buildWeeklyChallenge(),
+            // Weekly Challenge Section (updated with header)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Weekly Challenge',
+                  style: AppTextStyles.sectionTitle,
+                ),
+                const SizedBox(height: AppDimensions.spaceM),
+                _buildWeeklyChallenge(),
+              ],
+            ),
           ],
         ),
       ),
@@ -143,91 +199,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
             textAlign: TextAlign.center,
           ),
           
-          const SizedBox(height: AppDimensions.spaceXL),
+          const SizedBox(height: AppDimensions.spaceM),
           
-          // Action Buttons Row
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => _createNewTrip(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.amethyst600,
-                    padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceM),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-                    ),
-                  ),
-                  child: const Text(
-                    'Create Trip',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceM),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _joinChallenge,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white, width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceM),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-                    ),
-                  ),
-                  child: const Text(
-                    'Join Challenge',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          // Additional motivational text (replacing the buttons)
+          Text(
+            'Discover new places, track your adventures, and collect badges as you explore the world around you.',
+            style: AppTextStyles.heroSubtitle.copyWith(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChips() {
-    return Row(
-      children: _filterOptions.map((filter) {
-        final isSelected = filter == _selectedFilter;
-        return Padding(
-          padding: const EdgeInsets.only(right: AppDimensions.spaceM),
-          child: FilterChip(
-            label: Text(filter),
-            selected: isSelected,
-            onSelected: (selected) {
-              setState(() {
-                _selectedFilter = filter;
-              });
-            },
-            backgroundColor: Colors.white,
-            selectedColor: AppColors.amethyst100,
-            checkmarkColor: AppColors.amethyst600,
-            labelStyle: TextStyle(
-              color: isSelected ? AppColors.amethyst600 : AppColors.textSecond,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-              side: BorderSide(
-                color: isSelected ? AppColors.amethyst600 : Colors.grey.shade300,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
+  // Removed _buildFilterChips() method entirely
 
   Widget _buildDiscoveryCard() {
     return Container(
@@ -347,16 +335,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Friends Activity',
-            style: AppTextStyles.cardTitle.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          
-          const SizedBox(height: AppDimensions.spaceL),
-          
           // Friends Avatars
           Row(
             children: friends.map((friend) {
@@ -379,8 +357,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             }).toList(),
           ),
+          
+          const SizedBox(height: AppDimensions.spaceM),
+          
+          // Recent Activity Feed
+          Column(
+            children: [
+              _buildActivityItem(
+                'Alex completed "Downtown Walking Tour"',
+                '2 hours ago',
+                Icons.check_circle,
+                AppColors.success,
+              ),
+              const SizedBox(height: AppDimensions.spaceS),
+              _buildActivityItem(
+                'Maya earned "Urban Explorer" badge',
+                '5 hours ago',
+                Icons.emoji_events,
+                AppColors.warning,
+              ),
+              const SizedBox(height: AppDimensions.spaceS),
+              _buildActivityItem(
+                'Sam started "Nature Trail Adventure"',
+                '1 day ago',
+                Icons.play_arrow,
+                AppColors.info,
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActivityItem(String text, String time, IconData icon, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 12,
+          ),
+        ),
+        const SizedBox(width: AppDimensions.spaceS),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                style: AppTextStyles.cardSubtitle.copyWith(fontSize: 13),
+              ),
+              Text(
+                time,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecond.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -402,16 +445,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Your Progress Snapshot',
-            style: AppTextStyles.cardTitle.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          
-          const SizedBox(height: AppDimensions.spaceL),
-          
           // Stats Grid
           Row(
             children: [
@@ -479,63 +512,113 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Challenge Icon
-          Container(
-            padding: const EdgeInsets.all(AppDimensions.spaceM),
-            decoration: BoxDecoration(
-              color: AppColors.amethyst100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.emoji_events,
-              color: AppColors.amethyst600,
-              size: 24,
-            ),
+          Row(
+            children: [
+              // Challenge Icon
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.spaceM),
+                decoration: BoxDecoration(
+                  color: AppColors.amethyst100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.emoji_events,
+                  color: AppColors.amethyst600,
+                  size: 24,
+                ),
+              ),
+              
+              const SizedBox(width: AppDimensions.spaceL),
+              
+              // Challenge Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Urban Explorer',
+                      style: AppTextStyles.cardTitle.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spaceXS),
+                    Text(
+                      'Complete 3 different trip types this week',
+                      style: AppTextStyles.cardSubtitle,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           
-          const SizedBox(width: AppDimensions.spaceL),
+          const SizedBox(height: AppDimensions.spaceL),
           
-          // Challenge Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Weekly Challenge',
-                  style: AppTextStyles.cardTitle.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+          // Progress Bar
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Progress: 2/3',
+                    style: AppTextStyles.cardSubtitle.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppDimensions.spaceXS),
-                Text(
-                  'Complete 3 different trip types',
-                  style: AppTextStyles.cardSubtitle,
-                ),
-              ],
-            ),
-          ),
-          
-          // Join Button
-          ElevatedButton(
-            onPressed: _joinChallenge,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.amethyst600,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spaceL,
-                vertical: AppDimensions.spaceM,
+                  Text(
+                    '3 days left',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+              const SizedBox(height: AppDimensions.spaceS),
+              LinearProgressIndicator(
+                value: 2 / 3,
+                backgroundColor: AppColors.amethyst100,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.amethyst600),
+                minHeight: 6,
               ),
-            ),
-            child: const Text(
-              'Join',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+              const SizedBox(height: AppDimensions.spaceM),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Challenge system coming soon!'),
+                            backgroundColor: AppColors.amethyst600,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.amethyst600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppDimensions.spaceM,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continue Challenge',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),

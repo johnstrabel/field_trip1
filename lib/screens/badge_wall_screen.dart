@@ -257,8 +257,16 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
             const SizedBox(height: AppDimensions.spaceXL),
             ElevatedButton.icon(
               onPressed: () {
-                // Navigate to Explorer tab (index 1 in new structure)
-                DefaultTabController.of(context)?.animateTo(1);
+                // Navigate to Explorer tab (index 2 in NEW navigation structure)
+                // Since we're in a bottom navigation context, we need to access the parent
+                final navigator = Navigator.of(context);
+                
+                // Pop back to main navigation and switch to Explorer tab
+                navigator.popUntil((route) => route.isFirst);
+                
+                // Since MainNavigationScreen uses StatefulWidget with _selectedIndex,
+                // we'll trigger a rebuild by using a callback or navigator replacement
+                navigator.pushReplacementNamed('/', arguments: {'initialIndex': 2});
               },
               icon: const Icon(Icons.explore),
               label: const Text('Start Exploring'),
