@@ -1,5 +1,6 @@
 // lib/theme/app_theme.dart
 
+import 'package:field_trip1/models/trip.dart';
 import 'package:flutter/material.dart';
 
 class AppColors {
@@ -31,10 +32,22 @@ class AppColors {
   // Social Status
   static const Color onlineGreen = Color(0xFF137A3F);
   static const Color onlineBackground = Color(0xFFC4F2CF);
+  
+  // ADDED: Compatibility aliases for new screens
+  static const Color textPrimary = textMain;           
+  static const Color textSecondary = textSecond;      
+  static const Color primaryText = textMain;          
+  static const Color border = stroke;                 
+  static const Color amethyst400 = Color(0xFF9B5DE5); 
+  static const Color amethyst300 = Color(0xFFB794F6); 
+  static const Color challengeOrange = challengeCrimson; 
+  static const Color challengeOrangeLight = Color(0xFFFFF3E0); 
+  static const Color successLight = Color(0xFFE8F5E8);   
 }
 
 class AppDimensions {
   // Border Radius
+  static const double radiusS = 8.0;   // ADDED: Small radius
   static const double radiusM = 12.0;
   static const double radiusL = 16.0;
   
@@ -100,6 +113,37 @@ class AppTextStyles {
   static const TextStyle statLabel = TextStyle(
     fontSize: 12,
     color: AppColors.textSecond,
+  );
+  
+  // ADDED: Compatibility text styles for new screens
+  static const TextStyle subtitle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textMain,
+  );
+  
+  static const TextStyle body = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textMain,
+  );
+  
+  static const TextStyle caption = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.normal,
+    color: AppColors.textSecond,
+  );
+  
+  static const TextStyle button = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textMain,
+  );
+  
+  static const TextStyle heading = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+    color: AppColors.textMain,
   );
 }
 
@@ -216,8 +260,64 @@ class AppTheme {
   }
 }
 
-// Trip Type Helper
+// UPDATED: Trip Type Helper with both old and new methods
 class TripTypeHelper {
+  final String displayName;
+  final Color color;
+  final IconData icon;
+
+  const TripTypeHelper({
+    required this.displayName,
+    required this.color,
+    required this.icon,
+  });
+
+  // NEW: Method needed by Explorer and Live Tracking screens
+  static TripTypeHelper fromType(dynamic type) {
+    String typeString;
+    if (type.runtimeType.toString().contains('TripType')) {
+      // It's an enum, convert to string
+      typeString = type.toString().split('.').last;
+    } else {
+      // It's already a string
+      typeString = type.toString();
+    }
+    
+    switch (typeString.toLowerCase()) {
+      case 'standard':
+        return const TripTypeHelper(
+          displayName: 'Standard',
+          color: AppColors.standardBlue,
+          icon: Icons.explore,
+        );
+      case 'challenge':
+        return const TripTypeHelper(
+          displayName: 'Challenge',
+          color: AppColors.challengeCrimson,
+          icon: Icons.flag,
+        );
+      case 'barcrawl':
+        return const TripTypeHelper(
+          displayName: 'Bar Crawl',
+          color: AppColors.barcrawlBronze,
+          icon: Icons.local_bar,
+        );
+      case 'fitness':
+        return const TripTypeHelper(
+          displayName: 'Fitness',
+          color: AppColors.fitnessAmber,
+          icon: Icons.fitness_center,
+        );
+      default:
+        return const TripTypeHelper(
+          displayName: 'Standard',
+          color: AppColors.standardBlue,
+          icon: Icons.explore,
+        );
+    }
+  }
+  
+  // EXISTING: Keep your original methods
   static Color getColor(String tripType) {
     switch (tripType.toLowerCase()) {
       case 'standard':

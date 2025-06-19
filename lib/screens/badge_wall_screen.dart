@@ -5,7 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/trip.dart' as model;
 import '../theme/app_theme.dart';
 import '../widgets/filter_chip_row.dart';
-import 'trip_builder_screen.dart';
 
 class BadgeWallScreen extends StatefulWidget {
   final List<model.Badge>? badges; // Make it optional for navigation
@@ -19,12 +18,6 @@ class BadgeWallScreen extends StatefulWidget {
 class _BadgeWallScreenState extends State<BadgeWallScreen> {
   String _selectedFilter = 'All';
   final List<String> _filterOptions = ['All', 'Standard', 'Challenge', 'Barcrawl', 'Fitness'];
-
-  /// Returns the border color for each TripType
-  Color _getTypeColor(model.TripType type) {
-    final typeName = type.toString().split('.').last;
-    return TripTypeHelper.getColor(typeName);
-  }
 
   /// Filter badges by trip type
   List<model.Badge> _filterBadges(List<model.Badge> badges) {
@@ -40,8 +33,10 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Badge Wall'),
+        title: const Text('Achievements'),
         automaticallyImplyLeading: false,
+        backgroundColor: AppColors.card,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -51,6 +46,7 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
           ),
         ],
       ),
+      backgroundColor: AppColors.surface,
       body: widget.badges != null 
         ? _buildBadgeContent(widget.badges!)
         : ValueListenableBuilder(
@@ -66,48 +62,50 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
   Widget _buildBadgeContent(List<model.Badge> allBadges) {
     final filteredBadges = _filterBadges(allBadges);
     
-    return Column(
-      children: [
-        // Header Section with Stats
-        _buildHeaderSection(allBadges),
-        
-        // Filter Section
-        if (allBadges.isNotEmpty)
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Header Section with Stats
+          _buildHeaderSection(allBadges),
+          
+          // Filter Section
+          if (allBadges.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Filter by Trip Type',
+                    style: AppTextStyles.sectionTitle,
+                  ),
+                  const SizedBox(height: AppDimensions.spaceM),
+                  FilterChipRow(
+                    options: _filterOptions,
+                    selectedOption: _selectedFilter,
+                    onSelectionChanged: (selected) {
+                      setState(() {
+                        _selectedFilter = selected;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          
+          // Badges Grid or Empty State
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spaceL,
-              vertical: AppDimensions.spaceM,
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height * 0.4,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Filter by Trip Type',
-                  style: AppTextStyles.cardTitle.copyWith(fontSize: 14),
-                ),
-                const SizedBox(height: AppDimensions.spaceM),
-                FilterChipRow(
-                  options: _filterOptions,
-                  selectedOption: _selectedFilter,
-                  onSelectionChanged: (selected) {
-                    setState(() {
-                      _selectedFilter = selected;
-                    });
-                  },
-                ),
-              ],
-            ),
+            child: allBadges.isEmpty
+                ? _buildEmptyState()
+                : filteredBadges.isEmpty
+                    ? _buildNoResultsState()
+                    : _buildBadgeGrid(filteredBadges),
           ),
-        
-        // Badges Grid or Empty State
-        Expanded(
-          child: allBadges.isEmpty
-              ? _buildEmptyState()
-              : filteredBadges.isEmpty
-                  ? _buildNoResultsState()
-                  : _buildBadgeGrid(filteredBadges),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -121,18 +119,12 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
       margin: const EdgeInsets.all(AppDimensions.spaceL),
       padding: const EdgeInsets.all(AppDimensions.spaceL),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.warning.withOpacity(0.1),
-            AppColors.warning.withOpacity(0.05),
-          ],
+        gradient: const LinearGradient(
+          colors: [AppColors.amethyst600, AppColors.amethyst100],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(
-          color: AppColors.warning.withOpacity(0.2),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,13 +134,13 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
               Container(
                 padding: const EdgeInsets.all(AppDimensions.spaceM),
                 decoration: BoxDecoration(
-                  color: AppColors.warning,
+                  color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(AppDimensions.spaceM),
                 ),
                 child: const Icon(
                   Icons.emoji_events,
                   color: Colors.white,
-                  size: AppDimensions.iconSizeM,
+                  size: AppDimensions.iconSizeL,
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
@@ -158,8 +150,8 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
                   children: [
                     Text(
                       'Achievement Gallery',
-                      style: AppTextStyles.cardTitle.copyWith(
-                        fontSize: 18,
+                      style: AppTextStyles.heroTitle.copyWith(
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -168,7 +160,9 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
                       badges.isEmpty
                           ? 'Start earning badges by completing trips!'
                           : 'You\'ve earned ${badges.length} badge${badges.length == 1 ? '' : 's'}',
-                      style: AppTextStyles.cardSubtitle,
+                      style: AppTextStyles.heroSubtitle.copyWith(
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -181,7 +175,7 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
             
             // Quick Stats Row
             Row(
-              children: model.TripType.values.take(4).map((type) {
+              children: model.TripType.values.map((type) {
                 final typeName = type.toString().split('.').last;
                 final count = typeStats[type] ?? 0;
                 final color = TripTypeHelper.getColor(typeName);
@@ -192,29 +186,30 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppDimensions.spaceS),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(AppDimensions.spaceS),
                         ),
                         child: Icon(
                           TripTypeHelper.getIcon(typeName),
-                          color: color,
-                          size: 16,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
                       const SizedBox(height: AppDimensions.spaceXS),
                       Text(
                         '$count',
-                        style: TextStyle(
-                          color: color,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 18,
                         ),
                       ),
                       Text(
                         typeName.substring(0, 3).toUpperCase(),
                         style: TextStyle(
-                          color: AppColors.textSecond,
+                          color: Colors.white.withOpacity(0.8),
                           fontSize: 10,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -236,15 +231,16 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(AppDimensions.spaceXL),
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
+                color: AppColors.amethyst100,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.emoji_events_outlined,
                 size: 64,
-                color: AppColors.warning,
+                color: AppColors.amethyst600,
               ),
             ),
             const SizedBox(height: AppDimensions.spaceXL),
@@ -261,11 +257,19 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
             const SizedBox(height: AppDimensions.spaceXL),
             ElevatedButton.icon(
               onPressed: () {
-                // Navigate to trip builder
-                DefaultTabController.of(context)?.animateTo(2);
+                // Navigate to Explorer tab (index 1 in new structure)
+                DefaultTabController.of(context)?.animateTo(1);
               },
-              icon: const Icon(Icons.add_location),
-              label: const Text('Create Your First Trip'),
+              icon: const Icon(Icons.explore),
+              label: const Text('Start Exploring'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.amethyst600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.spaceXL,
+                  vertical: AppDimensions.spaceM,
+                ),
+              ),
             ),
           ],
         ),
@@ -312,19 +316,23 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
   }
 
   Widget _buildBadgeGrid(List<model.Badge> badges) {
-    return GridView.builder(
+    return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.0,
-        crossAxisSpacing: AppDimensions.spaceM,
-        mainAxisSpacing: AppDimensions.spaceM,
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.85,
+          crossAxisSpacing: AppDimensions.spaceM,
+          mainAxisSpacing: AppDimensions.spaceM,
+        ),
+        itemCount: badges.length,
+        itemBuilder: (context, index) {
+          final badge = badges[index];
+          return _BadgeCard(badge: badge);
+        },
       ),
-      itemCount: badges.length,
-      itemBuilder: (context, index) {
-        final badge = badges[index];
-        return _BadgeCard(badge: badge);
-      },
     );
   }
 
@@ -332,19 +340,28 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('🏆 About Badges'),
+        title: Row(
+          children: [
+            Icon(Icons.emoji_events, color: AppColors.amethyst600),
+            const SizedBox(width: AppDimensions.spaceS),
+            const Text('About Badges'),
+          ],
+        ),
         content: const Text(
           'Badges are earned by completing trips! Each trip type has its own unique badge style:\n\n'
           '🔵 Standard - Blue badges for regular exploration\n'
           '🔴 Challenge - Red badges for difficult routes\n'
-          '🟠 Barcrawl - Orange badges for social adventures\n'
-          '🟢 Fitness - Green badges for active journeys\n\n'
+          '🟠 Barcrawl - Bronze badges for social adventures\n'
+          '🟡 Fitness - Amber badges for active journeys\n\n'
           'Complete more trips to grow your collection!',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Got it!'),
+            child: Text(
+              'Got it!',
+              style: TextStyle(color: AppColors.amethyst600),
+            ),
           ),
         ],
       ),
@@ -357,108 +374,119 @@ class _BadgeCard extends StatelessWidget {
 
   const _BadgeCard({required this.badge});
 
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date).inDays;
+    
+    if (difference == 0) return 'Today';
+    if (difference == 1) return 'Yesterday';
+    if (difference < 7) return '${difference}d ago';
+    if (difference < 30) return '${(difference / 7).round()}w ago';
+    return '${(difference / 30).round()}mo ago';
+  }
+
   @override
   Widget build(BuildContext context) {
     final typeName = badge.type.toString().split('.').last;
     final color = TripTypeHelper.getColor(typeName);
     final icon = TripTypeHelper.getIcon(typeName);
     
-    return Card(
-      elevation: 4,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          border: Border.all(color: color, width: 3),
-          gradient: LinearGradient(
-            colors: [
-              Colors.white,
-              color.withOpacity(0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        border: Border.all(color: color, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.spaceM),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Badge Icon with Glow Effect
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.spaceM),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.4),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.emoji_events,
-                  color: Colors.white,
-                  size: AppDimensions.iconSizeL,
-                ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.spaceL),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Badge Icon with Glow Effect
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceL),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-              
-              const SizedBox(height: AppDimensions.spaceM),
-              
-              // Badge Title
-              Text(
-                badge.label,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.cardTitle.copyWith(fontSize: 14),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              child: Icon(
+                Icons.emoji_events,
+                color: Colors.white,
+                size: AppDimensions.iconSizeL,
               ),
-              
-              const SizedBox(height: AppDimensions.spaceS),
-              
-              // Trip Type Badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.spaceS,
-                  vertical: AppDimensions.spaceXS,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                  border: Border.all(color: color.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
+            ),
+            
+            const SizedBox(height: AppDimensions.spaceM),
+            
+            // Badge Title
+            Text(
+              badge.label,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.cardTitle.copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            
+            const SizedBox(height: AppDimensions.spaceS),
+            
+            // Trip Type Badge
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.spaceS,
+                vertical: AppDimensions.spaceXS,
+              ),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    color: color,
+                    size: 12,
+                  ),
+                  const SizedBox(width: AppDimensions.spaceXS),
+                  Text(
+                    typeName.toUpperCase(),
+                    style: TextStyle(
                       color: color,
-                      size: 12,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(width: AppDimensions.spaceXS),
-                    Text(
-                      typeName.toUpperCase(),
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              
-              const SizedBox(height: AppDimensions.spaceS),
-              
-              // Earned Date
-              Text(
-                'Earned ${badge.earnedAt.toLocal().toString().split(' ')[0]}',
-                style: AppTextStyles.cardSubtitle.copyWith(fontSize: 10),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+            
+            const SizedBox(height: AppDimensions.spaceS),
+            
+            // Earned Date
+            Text(
+              'Earned ${_formatDate(badge.earnedAt)}',
+              style: AppTextStyles.cardSubtitle.copyWith(fontSize: 10),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
