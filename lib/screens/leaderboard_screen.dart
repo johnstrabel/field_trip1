@@ -1,7 +1,8 @@
-// lib/screens/leaderboard_screen.dart
+// lib/screens/leaderboard_screen.dart - Complete version with navigation wiring
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../data/mock_data.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({Key? key}) : super(key: key);
@@ -543,14 +544,36 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
+  // Helper method to convert LeaderboardEntry to FriendProfile for navigation
+  FriendProfile _leaderboardEntryToProfile(LeaderboardEntry entry) {
+    return FriendProfile(
+      id: entry.userId,
+      name: entry.name,
+      username: entry.username,
+      avatar: entry.avatar,
+      isOnline: true, // Mock data
+      lastSeen: DateTime.now(),
+      totalTrips: entry.score,
+      badges: entry.badges,
+      currentStreak: entry.streak,
+      mutualFriends: 2, // Mock data
+      isFollowing: false,
+      location: 'Unknown', // Mock data
+      bio: 'Fellow explorer and adventurer',
+    );
+  }
+
   void _viewProfile(LeaderboardEntry entry) {
     if (entry.isCurrentUser) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('This is your profile!')),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Opening ${entry.name}\'s profile...')),
+      final friendProfile = _leaderboardEntryToProfile(entry);
+      Navigator.pushNamed(
+        context,
+        '/friend-profile',
+        arguments: friendProfile,
       );
     }
   }

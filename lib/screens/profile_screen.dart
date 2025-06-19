@@ -1,4 +1,4 @@
-// lib/screens/profile_screen.dart
+// lib/screens/profile_screen.dart - Complete version with navigation wiring
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -54,7 +54,7 @@ class ProfileScreen extends StatelessWidget {
                     
                     const SizedBox(height: AppDimensions.spaceL),
                     
-                    // Social Section
+                    // Social Section - UPDATED WITH NAVIGATION
                     _buildSocialSection(context),
                     
                     const SizedBox(height: AppDimensions.spaceL),
@@ -378,9 +378,7 @@ class ProfileScreen extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Add friends feature coming soon!')),
-                        );
+                        Navigator.pushNamed(context, '/friends');
                       },
                       icon: const Icon(Icons.person_add, size: 18),
                       label: const Text('Add Friends'),
@@ -390,9 +388,7 @@ class ProfileScreen extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Leaderboards coming soon!')),
-                        );
+                        Navigator.pushNamed(context, '/leaderboard');
                       },
                       icon: const Icon(Icons.leaderboard, size: 18),
                       label: const Text('Leaderboard'),

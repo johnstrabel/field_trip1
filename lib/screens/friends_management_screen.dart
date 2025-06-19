@@ -1,8 +1,9 @@
-// lib/screens/friends_management_screen.dart
+// lib/screens/friends_management_screen.dart - Complete version with navigation wiring
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
+import '../data/mock_data.dart';
 
 class FriendsManagementScreen extends StatefulWidget {
   const FriendsManagementScreen({Key? key}) : super(key: key);
@@ -494,6 +495,25 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
     );
   }
 
+  // Helper method to convert FriendModel to FriendProfile for navigation
+  FriendProfile _friendModelToProfile(FriendModel friend) {
+    return FriendProfile(
+      id: friend.id,
+      name: friend.name,
+      username: friend.username,
+      avatar: friend.avatar,
+      isOnline: friend.isOnline,
+      lastSeen: friend.lastSeen,
+      totalTrips: friend.tripCount,
+      badges: 8, // Mock data
+      currentStreak: 5, // Mock data
+      mutualFriends: friend.mutualFriends,
+      isFollowing: true, // Mock data
+      location: 'Unknown', // Mock data
+      bio: 'Fellow explorer and adventurer',
+    );
+  }
+
   // Action Methods
   void _showQRCode() {
     showDialog(
@@ -565,8 +585,11 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
   }
 
   void _viewFriendProfile(FriendModel friend) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening ${friend.name}\'s profile...')),
+    final friendProfile = _friendModelToProfile(friend);
+    Navigator.pushNamed(
+      context,
+      '/friend-profile',
+      arguments: friendProfile,
     );
   }
 
@@ -818,7 +841,7 @@ class _FriendRequestCard extends StatelessWidget {
   }
 }
 
-// Data Models
+// Data Models (reusing from original)
 class FriendModel {
   final String id;
   final String name;

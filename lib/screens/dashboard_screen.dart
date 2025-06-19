@@ -1,9 +1,10 @@
-// lib/screens/dashboard_screen.dart
+// lib/screens/dashboard_screen.dart - Complete version with navigation wiring
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/trip.dart' as model;
 import '../theme/app_theme.dart';
+import '../data/mock_data.dart';
 import 'map_trip_creation_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,8 +15,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // Removed _selectedFilter and _filterOptions since we're removing filter chips
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,7 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Discovery Section Header (new)
+            // Discovery Section Header - UPDATED WITH NAVIGATION
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -45,12 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Full discovery map coming soon!'),
-                        backgroundColor: AppColors.amethyst600,
-                      ),
-                    );
+                    Navigator.pushNamed(context, '/map-discover');
                   },
                   child: Text(
                     'View All',
@@ -65,12 +59,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             
             const SizedBox(height: AppDimensions.spaceM),
             
-            // Discovery Card (keeping your existing implementation) - Filter chips removed!
+            // Discovery Card (keeping your existing implementation)
             _buildDiscoveryCard(),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Friends Activity Section (updated with header)
+            // Friends Activity Section - UPDATED WITH NAVIGATION
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -83,12 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Friends management coming soon!'),
-                            backgroundColor: AppColors.amethyst600,
-                          ),
-                        );
+                        Navigator.pushNamed(context, '/friends');
                       },
                       child: Text(
                         'Manage',
@@ -122,7 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Weekly Challenge Section (updated with header)
+            // Weekly Challenge Section - UPDATED WITH NAVIGATION
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -215,108 +204,107 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Removed _buildFilterChips() method entirely
-
   Widget _buildDiscoveryCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Map Preview (placeholder)
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/map-discover');
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppDimensions.spaceL),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-            child: Stack(
-              children: [
-                // Map-like pattern
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.green.shade100,
-                        Colors.blue.shade100,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+          ],
+        ),
+        child: Row(
+          children: [
+            // Map Preview (placeholder)
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              ),
+              child: Stack(
+                children: [
+                  // Map-like pattern
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.green.shade100,
+                          Colors.blue.shade100,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
                   ),
-                ),
-                // Path line
-                CustomPaint(
-                  size: const Size(80, 80),
-                  painter: _MapPathPainter(),
-                ),
-                // Location pin
-                const Positioned(
-                  top: 20,
-                  right: 25,
-                  child: Icon(
-                    Icons.location_pin,
-                    color: Colors.red,
-                    size: 16,
+                  // Path line
+                  CustomPaint(
+                    size: const Size(80, 80),
+                    painter: _MapPathPainter(),
                   ),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(width: AppDimensions.spaceL),
-          
-          // Trip Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Trips Near You',
-                  style: AppTextStyles.cardTitle.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  // Location pin
+                  const Positioned(
+                    top: 20,
+                    right: 25,
+                    child: Icon(
+                      Icons.location_pin,
+                      color: Colors.red,
+                      size: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppDimensions.spaceXS),
-                Text(
-                  '5 trips within 2 km',
-                  style: AppTextStyles.cardSubtitle,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          
-          // Arrow
-          Icon(
-            Icons.chevron_right,
-            color: AppColors.textSecond,
-            size: 24,
-          ),
-        ],
+            
+            const SizedBox(width: AppDimensions.spaceL),
+            
+            // Trip Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Trips Near You',
+                    style: AppTextStyles.cardTitle.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.spaceXS),
+                  Text(
+                    '5 trips within 2 km',
+                    style: AppTextStyles.cardSubtitle,
+                  ),
+                ],
+              ),
+            ),
+            
+            // Arrow
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.textSecond,
+              size: 24,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildFriendsActivity() {
-    final friends = [
-      {'name': 'Alex', 'avatar': Icons.person},
-      {'name': 'Maya', 'avatar': Icons.person_2},
-      {'name': 'Sam', 'avatar': Icons.person_3},
-    ];
+    final friends = MockData.sampleFriends;
 
     return Container(
       width: double.infinity,
@@ -335,23 +323,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Friends Avatars
+          // Friends Avatars - UPDATED WITH NAVIGATION
           Row(
-            children: friends.map((friend) {
-              return Padding(
-                padding: const EdgeInsets.only(right: AppDimensions.spaceM),
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: AppColors.amethyst100,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.amethyst600, width: 2),
-                  ),
-                  child: Icon(
-                    friend['avatar'] as IconData,
-                    color: AppColors.amethyst600,
-                    size: 24,
+            children: friends.take(3).map((friend) {
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/friend-profile',
+                    arguments: friend,
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(right: AppDimensions.spaceM),
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: AppColors.amethyst100,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.amethyst600, width: 2),
+                    ),
+                    child: Icon(
+                      friend.avatar,
+                      color: AppColors.amethyst600,
+                      size: 24,
+                    ),
                   ),
                 ),
               );
@@ -497,130 +494,120 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildWeeklyChallenge() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(color: AppColors.amethyst600.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // Challenge Icon
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.spaceM),
-                decoration: BoxDecoration(
-                  color: AppColors.amethyst100,
-                  shape: BoxShape.circle,
+    final challenge = MockData.sampleChallenge;
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/challenge-detail');
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppDimensions.spaceL),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+          border: Border.all(color: AppColors.amethyst600.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Challenge Icon
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.spaceM),
+                  decoration: BoxDecoration(
+                    color: challenge.color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.emoji_events,
+                    color: challenge.color,
+                    size: 24,
+                  ),
                 ),
-                child: Icon(
-                  Icons.emoji_events,
-                  color: AppColors.amethyst600,
-                  size: 24,
+                
+                const SizedBox(width: AppDimensions.spaceL),
+                
+                // Challenge Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        challenge.title,
+                        style: AppTextStyles.cardTitle.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: AppDimensions.spaceXS),
+                      Text(
+                        challenge.description,
+                        style: AppTextStyles.cardSubtitle,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              
-              const SizedBox(width: AppDimensions.spaceL),
-              
-              // Challenge Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                
+                // Arrow
+                Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecond,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: AppDimensions.spaceL),
+            
+            // Progress Bar
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Urban Explorer',
-                      style: AppTextStyles.cardTitle.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      'Progress: ${(challenge.progress * 100).toInt()}%',
+                      style: AppTextStyles.cardSubtitle.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: AppDimensions.spaceXS),
                     Text(
-                      'Complete 3 different trip types this week',
-                      style: AppTextStyles.cardSubtitle,
+                      '${challenge.participants} participants',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecond,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: AppDimensions.spaceL),
-          
-          // Progress Bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Progress: 2/3',
-                    style: AppTextStyles.cardSubtitle.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                const SizedBox(height: AppDimensions.spaceS),
+                LinearProgressIndicator(
+                  value: challenge.progress,
+                  backgroundColor: challenge.color.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(challenge.color),
+                  minHeight: 6,
+                ),
+                const SizedBox(height: AppDimensions.spaceM),
+                Text(
+                  'Reward: ${challenge.reward}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: challenge.color,
+                    fontWeight: FontWeight.w600,
                   ),
-                  Text(
-                    '3 days left',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.warning,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppDimensions.spaceS),
-              LinearProgressIndicator(
-                value: 2 / 3,
-                backgroundColor: AppColors.amethyst100,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.amethyst600),
-                minHeight: 6,
-              ),
-              const SizedBox(height: AppDimensions.spaceM),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Challenge system coming soon!'),
-                            backgroundColor: AppColors.amethyst600,
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.amethyst600,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppDimensions.spaceM,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-                        ),
-                      ),
-                      child: const Text(
-                        'Continue Challenge',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
