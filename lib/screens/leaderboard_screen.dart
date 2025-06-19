@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({Key? key}) : super(key: key);
@@ -81,6 +80,68 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         streak: 2,
       ),
     ],
+    'distance': [
+      LeaderboardEntry(
+        rank: 1,
+        userId: '3',
+        name: 'Sam Johnson',
+        username: '@sam_adventures',
+        avatar: Icons.person_3,
+        score: 142, // km
+        change: 8,
+        isCurrentUser: false,
+        badges: 15,
+        streak: 12,
+      ),
+      LeaderboardEntry(
+        rank: 2,
+        userId: '1',
+        name: 'Alex Chen',
+        username: '@alexc',
+        avatar: Icons.person,
+        score: 128,
+        change: 5,
+        isCurrentUser: false,
+        badges: 12,
+        streak: 7,
+      ),
+      LeaderboardEntry(
+        rank: 3,
+        userId: 'current',
+        name: 'You',
+        username: '@explorer',
+        avatar: Icons.person_4,
+        score: 95,
+        change: 12,
+        isCurrentUser: true,
+        badges: 8,
+        streak: 3,
+      ),
+      LeaderboardEntry(
+        rank: 4,
+        userId: '2',
+        name: 'Maya Rodriguez',
+        username: '@maya_explores',
+        avatar: Icons.person_2,
+        score: 87,
+        change: -2,
+        isCurrentUser: false,
+        badges: 10,
+        streak: 4,
+      ),
+      LeaderboardEntry(
+        rank: 5,
+        userId: '5',
+        name: 'Emma Wilson',
+        username: '@emma_w',
+        avatar: Icons.person,
+        score: 73,
+        change: 3,
+        isCurrentUser: false,
+        badges: 6,
+        streak: 2,
+      ),
+    ],
     'badges': [
       LeaderboardEntry(
         rank: 1,
@@ -113,7 +174,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         username: '@maya_explores',
         avatar: Icons.person_2,
         score: 10,
-        change: -1,
+        change: 0,
         isCurrentUser: false,
         badges: 10,
         streak: 4,
@@ -130,55 +191,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         badges: 8,
         streak: 3,
       ),
-    ],
-    'streaks': [
       LeaderboardEntry(
-        rank: 1,
-        userId: '3',
-        name: 'Sam Johnson',
-        username: '@sam_adventures',
-        avatar: Icons.person_3,
-        score: 12,
+        rank: 5,
+        userId: '5',
+        name: 'Emma Wilson',
+        username: '@emma_w',
+        avatar: Icons.person,
+        score: 6,
         change: 0,
         isCurrentUser: false,
-        badges: 15,
-        streak: 12,
-      ),
-      LeaderboardEntry(
-        rank: 2,
-        userId: '1',
-        name: 'Alex Chen',
-        username: '@alexc',
-        avatar: Icons.person,
-        score: 7,
-        change: 1,
-        isCurrentUser: false,
-        badges: 12,
-        streak: 7,
-      ),
-      LeaderboardEntry(
-        rank: 3,
-        userId: '2',
-        name: 'Maya Rodriguez',
-        username: '@maya_explores',
-        avatar: Icons.person_2,
-        score: 4,
-        change: -1,
-        isCurrentUser: false,
-        badges: 10,
-        streak: 4,
-      ),
-      LeaderboardEntry(
-        rank: 4,
-        userId: 'current',
-        name: 'You',
-        username: '@explorer',
-        avatar: Icons.person_4,
-        score: 3,
-        change: 1,
-        isCurrentUser: true,
-        badges: 8,
-        streak: 3,
+        badges: 6,
+        streak: 2,
       ),
     ],
   };
@@ -201,35 +224,44 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Leaderboard'),
-        backgroundColor: AppColors.card,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.access_time),
             initialValue: _selectedTimeframe,
-            onSelected: (value) {
+            onSelected: (String value) {
               setState(() {
                 _selectedTimeframe = value;
               });
             },
-            itemBuilder: (context) => _timeframeOptions.map((timeframe) {
-              return PopupMenuItem<String>(
-                value: timeframe,
-                child: Row(
-                  children: [
-                    Icon(
-                      _selectedTimeframe == timeframe
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
+            itemBuilder: (BuildContext context) {
+              return _timeframeOptions.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceM),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _selectedTimeframe,
+                    style: AppTextStyles.cardSubtitle.copyWith(
                       color: AppColors.amethyst600,
-                      size: 20,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: AppDimensions.spaceS),
-                    Text(timeframe),
-                  ],
-                ),
-              );
-            }).toList(),
+                  ),
+                  const SizedBox(width: AppDimensions.spaceXS),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: AppColors.amethyst600,
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
         bottom: TabBar(
@@ -238,309 +270,237 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           labelColor: AppColors.amethyst600,
           unselectedLabelColor: AppColors.textSecond,
           tabs: const [
-            Tab(
-              text: 'Trips',
-              icon: Icon(Icons.route, size: 20),
-            ),
-            Tab(
-              text: 'Badges',
-              icon: Icon(Icons.emoji_events, size: 20),
-            ),
-            Tab(
-              text: 'Streaks',
-              icon: Icon(Icons.local_fire_department, size: 20),
-            ),
+            Tab(text: 'Trips'),
+            Tab(text: 'Distance'),
+            Tab(text: 'Badges'),
           ],
         ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          // Timeframe Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppDimensions.spaceL),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.amethyst600.withOpacity(0.1),
-                  AppColors.amethyst100.withOpacity(0.3),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.emoji_events,
-                  color: AppColors.amethyst600,
-                  size: 24,
-                ),
-                const SizedBox(width: AppDimensions.spaceS),
-                Text(
-                  _selectedTimeframe,
-                  style: AppTextStyles.sectionTitle.copyWith(
-                    color: AppColors.amethyst600,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildLeaderboardTab('trips', 'Trips Completed', Icons.route),
-                _buildLeaderboardTab('badges', 'Badges Earned', Icons.emoji_events),
-                _buildLeaderboardTab('streaks', 'Day Streak', Icons.local_fire_department),
-              ],
-            ),
-          ),
+          _buildLeaderboard('trips', 'trips', Icons.map),
+          _buildLeaderboard('distance', 'km', Icons.straighten),
+          _buildLeaderboard('badges', 'badges', Icons.emoji_events),
         ],
       ),
     );
   }
 
-  Widget _buildLeaderboardTab(String category, String subtitle, IconData icon) {
-    final entries = _leaderboards[category] ?? [];
-    final currentUserEntry = entries.firstWhere(
-      (entry) => entry.isCurrentUser,
-      orElse: () => entries.first,
-    );
+  Widget _buildLeaderboard(String type, String unit, IconData icon) {
+    final entries = _leaderboards[type] ?? [];
+    
+    if (entries.isEmpty) {
+      return _buildEmptyState();
+    }
 
-    return Column(
-      children: [
-        // Top 3 Podium
-        if (entries.length >= 3) _buildPodium(entries.take(3).toList(), icon),
-
-        // Current User Summary (if not in top 3)
-        if (currentUserEntry.rank > 3) _buildCurrentUserSummary(currentUserEntry, subtitle, icon),
-
-        // Full Leaderboard
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppDimensions.spaceL),
-            itemCount: entries.length,
-            itemBuilder: (context, index) {
-              return _LeaderboardCard(
-                entry: entries[index],
-                subtitle: subtitle,
-                icon: icon,
-                onTap: () => _viewProfile(entries[index]),
-              );
-            },
-          ),
-        ),
-      ],
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      itemCount: entries.length,
+      separatorBuilder: (context, index) => const SizedBox(height: AppDimensions.spaceM),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return _LeaderboardCard(
+          entry: entry,
+          subtitle: '${entry.score} $unit',
+          icon: icon,
+          onTap: () => _viewProfile(entry),
+        );
+      },
     );
   }
 
-  Widget _buildPodium(List<LeaderboardEntry> topThree, IconData icon) {
-    // Reorder for podium display: 2nd, 1st, 3rd
-    final podiumOrder = [
-      if (topThree.length > 1) topThree[1], // 2nd place
-      topThree[0], // 1st place
-      if (topThree.length > 2) topThree[2], // 3rd place
-    ];
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppColors.amethyst100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.emoji_events_outlined,
+                size: 60,
+                color: AppColors.amethyst600,
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spaceL),
+            Text(
+              'No leaderboard data',
+              style: AppTextStyles.cardTitle.copyWith(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppDimensions.spaceS),
+            Text(
+              'Complete trips and challenges to see how you rank among your friends!',
+              style: AppTextStyles.cardSubtitle,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRankBadge(int rank) {
+    Color badgeColor;
+    Color textColor;
+    
+    switch (rank) {
+      case 1:
+        badgeColor = const Color(0xFFFFD700); // Gold
+        textColor = Colors.black;
+        break;
+      case 2:
+        badgeColor = const Color(0xFFC0C0C0); // Silver
+        textColor = Colors.black;
+        break;
+      case 3:
+        badgeColor = const Color(0xFFCD7F32); // Bronze
+        textColor = Colors.white;
+        break;
+      default:
+        badgeColor = AppColors.amethyst100;
+        textColor = AppColors.amethyst600;
+        break;
+    }
 
     return Container(
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: podiumOrder.asMap().entries.map((entry) {
-          final index = entry.key;
-          final user = entry.value;
-          final realRank = user.rank;
-          
-          // Heights for podium effect
-          final heights = [80.0, 120.0, 60.0]; // 2nd, 1st, 3rd
-          final colors = [
-            Colors.grey.shade400, // Silver
-            AppColors.warning, // Gold
-            Colors.brown.shade400, // Bronze
-          ];
-          
-          return Column(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: badgeColor,
+        shape: BoxShape.circle,
+        border: rank <= 3 ? Border.all(color: Colors.white, width: 2) : null,
+      ),
+      child: Center(
+        child: Text(
+          '$rank',
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserInfo(LeaderboardEntry user, String subtitle, IconData icon) {
+    return Row(
+      children: [
+        // Avatar with online indicator (for non-current users)
+        Stack(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: user.isCurrentUser 
+                    ? AppColors.amethyst100 
+                    : AppColors.surface,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                user.avatar,
+                color: user.isCurrentUser 
+                    ? AppColors.amethyst600 
+                    : AppColors.textSecond,
+                size: 24,
+              ),
+            ),
+            if (!user.isCurrentUser)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        
+        const SizedBox(width: AppDimensions.spaceM),
+        
+        // User details
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar with crown for 1st place
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: realRank == 1 ? 80 : 60,
-                    height: realRank == 1 ? 80 : 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.amethyst100,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: colors[index],
-                        width: realRank == 1 ? 4 : 3,
-                      ),
-                    ),
-                    child: Icon(
-                      user.avatar,
-                      color: AppColors.amethyst600,
-                      size: realRank == 1 ? 32 : 24,
-                    ),
-                  ),
-                  if (realRank == 1)
-                    Positioned(
-                      top: -10,
-                      left: 0,
-                      right: 0,
-                      child: Icon(
-                        Icons.emoji_events,
-                        color: AppColors.warning,
-                        size: 32,
-                      ),
-                    ),
-                ],
-              ),
-              
-              const SizedBox(height: AppDimensions.spaceS),
-              
-              // Name
-              SizedBox(
-                width: 80,
-                child: Text(
-                  user.isCurrentUser ? 'You' : user.name.split(' ').first,
-                  style: AppTextStyles.cardTitle.copyWith(
-                    fontSize: realRank == 1 ? 16 : 14,
-                    fontWeight: realRank == 1 ? FontWeight.bold : FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              
-              // Score
               Text(
-                '${user.score}',
-                style: TextStyle(
-                  fontSize: realRank == 1 ? 20 : 18,
-                  fontWeight: FontWeight.bold,
-                  color: colors[index],
+                user.name,
+                style: AppTextStyles.cardTitle.copyWith(
+                  fontWeight: user.isCurrentUser ? FontWeight.bold : FontWeight.w600,
                 ),
               ),
-              
-              const SizedBox(height: AppDimensions.spaceS),
-              
-              // Podium Base
-              Container(
-                width: 60,
-                height: heights[index],
-                decoration: BoxDecoration(
-                  color: colors[index],
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(AppDimensions.radiusS),
-                    topRight: Radius.circular(AppDimensions.radiusS),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    '$realRank',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+              Text(
+                user.username,
+                style: AppTextStyles.cardSubtitle.copyWith(fontSize: 12),
+              ),
+              const SizedBox(height: AppDimensions.spaceXS),
+              Row(
+                children: [
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.cardTitle.copyWith(
+                      color: AppColors.amethyst600,
+                      fontSize: 16,
                     ),
                   ),
-                ),
+                  const SizedBox(width: AppDimensions.spaceM),
+                  Icon(
+                    user.change > 0 
+                        ? Icons.trending_up 
+                        : user.change < 0 
+                            ? Icons.trending_down 
+                            : Icons.trending_flat,
+                    color: user.change > 0 
+                        ? AppColors.success 
+                        : user.change < 0 
+                            ? AppColors.error 
+                            : AppColors.textSecond,
+                    size: 16,
+                  ),
+                  const SizedBox(width: AppDimensions.spaceXS),
+                  Text(
+                    user.change == 0 
+                        ? 'No change' 
+                        : '${user.change > 0 ? '+' : ''}${user.change} from last period',
+                    style: TextStyle(
+                      color: user.change > 0 
+                          ? AppColors.success 
+                          : user.change < 0 
+                              ? AppColors.error 
+                              : AppColors.textSecond,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildCurrentUserSummary(LeaderboardEntry user, String subtitle, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.all(AppDimensions.spaceL),
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.amethyst600.withOpacity(0.1),
-            AppColors.amethyst100.withOpacity(0.3),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          ),
         ),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(color: AppColors.amethyst600.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: AppColors.amethyst600,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                '#${user.rank}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppDimensions.spaceL),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your Ranking',
-                  style: AppTextStyles.cardTitle.copyWith(
-                    color: AppColors.amethyst600,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '${user.score} $subtitle',
-                  style: AppTextStyles.cardSubtitle,
-                ),
-                if (user.change != 0)
-                  Row(
-                    children: [
-                      Icon(
-                        user.change > 0 ? Icons.trending_up : Icons.trending_down,
-                        color: user.change > 0 ? AppColors.success : AppColors.error,
-                        size: 16,
-                      ),
-                      const SizedBox(width: AppDimensions.spaceXS),
-                      Text(
-                        '${user.change > 0 ? '+' : ''}${user.change} from last period',
-                        style: TextStyle(
-                          color: user.change > 0 ? AppColors.success : AppColors.error,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-          Icon(
-            icon,
-            color: AppColors.amethyst600,
-            size: 32,
-          ),
-        ],
-      ),
+        
+        // Action button
+        Icon(
+          icon,
+          color: AppColors.amethyst600,
+          size: 32,
+        ),
+      ],
     );
   }
 
@@ -594,163 +554,194 @@ class _LeaderboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
-      decoration: BoxDecoration(
-        color: entry.isCurrentUser 
-            ? AppColors.amethyst100.withOpacity(0.3)
-            : AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: entry.isCurrentUser 
-            ? Border.all(color: AppColors.amethyst600.withOpacity(0.5))
-            : null,
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(AppDimensions.spaceM),
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppDimensions.spaceL),
+        decoration: BoxDecoration(
+          color: entry.isCurrentUser 
+              ? AppColors.amethyst100.withOpacity(0.3)
+              : AppColors.card,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+          border: entry.isCurrentUser 
+              ? Border.all(color: AppColors.amethyst600, width: 2)
+              : Border.all(color: AppColors.stroke),
+        ),
+        child: Row(
           children: [
-            // Rank
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _getRankColor(entry.rank),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '#${entry.rank}',
-                  style: TextStyle(
-                    color: entry.rank <= 3 ? Colors.white : AppColors.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            // Rank badge
+            _buildRankBadge(entry.rank),
+            
             const SizedBox(width: AppDimensions.spaceM),
-            // Avatar
+            
+            // User info
+            Expanded(
+              child: _buildUserInfo(entry, subtitle, icon),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRankBadge(int rank) {
+    Color badgeColor;
+    Color textColor;
+    
+    switch (rank) {
+      case 1:
+        badgeColor = const Color(0xFFFFD700); // Gold
+        textColor = Colors.black;
+        break;
+      case 2:
+        badgeColor = const Color(0xFFC0C0C0); // Silver
+        textColor = Colors.black;
+        break;
+      case 3:
+        badgeColor = const Color(0xFFCD7F32); // Bronze
+        textColor = Colors.white;
+        break;
+      default:
+        badgeColor = AppColors.amethyst100;
+        textColor = AppColors.amethyst600;
+        break;
+    }
+
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: badgeColor,
+        shape: BoxShape.circle,
+        border: rank <= 3 ? Border.all(color: Colors.white, width: 2) : null,
+      ),
+      child: Center(
+        child: Text(
+          '$rank',
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserInfo(LeaderboardEntry user, String subtitle, IconData icon) {
+    return Row(
+      children: [
+        // Avatar with online indicator (for non-current users)
+        Stack(
+          children: [
             Container(
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: AppColors.amethyst100,
+                color: user.isCurrentUser 
+                    ? AppColors.amethyst100 
+                    : AppColors.surface,
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                entry.avatar,
-                color: AppColors.amethyst600,
+                user.avatar,
+                color: user.isCurrentUser 
+                    ? AppColors.amethyst600 
+                    : AppColors.textSecond,
                 size: 24,
               ),
             ),
-          ],
-        ),
-        title: Row(
-          children: [
-            Text(
-              entry.isCurrentUser ? 'You' : entry.name,
-              style: AppTextStyles.cardTitle.copyWith(
-                fontWeight: entry.isCurrentUser ? FontWeight.bold : FontWeight.w600,
-              ),
-            ),
-            if (entry.isCurrentUser) ...[
-              const SizedBox(width: AppDimensions.spaceS),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.spaceS,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.amethyst600,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                ),
-                child: const Text(
-                  'YOU',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+            if (!user.isCurrentUser)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                 ),
               ),
-            ],
           ],
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(entry.username, style: AppTextStyles.caption),
-            const SizedBox(height: 2),
-            Row(
-              children: [
-                Text(
-                  '${entry.score} $subtitle',
-                  style: AppTextStyles.cardSubtitle,
+        
+        const SizedBox(width: AppDimensions.spaceM),
+        
+        // User details
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.name,
+                style: AppTextStyles.cardTitle.copyWith(
+                  fontWeight: user.isCurrentUser ? FontWeight.bold : FontWeight.w600,
                 ),
-                if (entry.change != 0) ...[
-                  const SizedBox(width: AppDimensions.spaceS),
-                  Icon(
-                    entry.change > 0 ? Icons.trending_up : Icons.trending_down,
-                    color: entry.change > 0 ? AppColors.success : AppColors.error,
-                    size: 14,
-                  ),
+              ),
+              Text(
+                user.username,
+                style: AppTextStyles.cardSubtitle.copyWith(fontSize: 12),
+              ),
+              const SizedBox(height: AppDimensions.spaceXS),
+              Row(
+                children: [
                   Text(
-                    '${entry.change > 0 ? '+' : ''}${entry.change}',
+                    subtitle,
+                    style: AppTextStyles.cardTitle.copyWith(
+                      color: AppColors.amethyst600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.spaceM),
+                  Icon(
+                    user.change > 0 
+                        ? Icons.trending_up 
+                        : user.change < 0 
+                            ? Icons.trending_down 
+                            : Icons.trending_flat,
+                    color: user.change > 0 
+                        ? AppColors.success 
+                        : user.change < 0 
+                            ? AppColors.error 
+                            : AppColors.textSecond,
+                    size: 16,
+                  ),
+                  const SizedBox(width: AppDimensions.spaceXS),
+                  Text(
+                    user.change == 0 
+                        ? 'No change' 
+                        : '${user.change > 0 ? '+' : ''}${user.change} from last period',
                     style: TextStyle(
-                      color: entry.change > 0 ? AppColors.success : AppColors.error,
+                      color: user.change > 0 
+                          ? AppColors.success 
+                          : user.change < 0 
+                              ? AppColors.error 
+                              : AppColors.textSecond,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-              ],
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            if (entry.rank <= 3)
-              Icon(
-                Icons.emoji_events,
-                color: _getRankColor(entry.rank),
-                size: 24,
-              )
-            else
-              Icon(
-                icon,
-                color: AppColors.textSecond,
-                size: 20,
               ),
-            const SizedBox(height: 4),
-            Text(
-              '${entry.badges} badges',
-              style: AppTextStyles.caption.copyWith(fontSize: 10),
-            ),
-          ],
+            ],
+          ),
         ),
-        onTap: onTap,
-      ),
+        
+        // Action icon
+        Icon(
+          icon,
+          color: AppColors.amethyst600,
+          size: 32,
+        ),
+      ],
     );
-  }
-
-  Color _getRankColor(int rank) {
-    switch (rank) {
-      case 1:
-        return AppColors.warning; // Gold
-      case 2:
-        return Colors.grey.shade400; // Silver
-      case 3:
-        return Colors.brown.shade400; // Bronze
-      default:
-        return AppColors.surface;
-    }
   }
 }
 
-// Data Model
+// Data Models
 class LeaderboardEntry {
   final int rank;
   final String userId;
@@ -758,7 +749,7 @@ class LeaderboardEntry {
   final String username;
   final IconData avatar;
   final int score;
-  final int change; // +/- change from last period
+  final int change;
   final bool isCurrentUser;
   final int badges;
   final int streak;
@@ -774,5 +765,37 @@ class LeaderboardEntry {
     required this.isCurrentUser,
     required this.badges,
     required this.streak,
+  });
+}
+
+class FriendProfile {
+  final String id;
+  final String name;
+  final String username;
+  final IconData avatar;
+  final bool isOnline;
+  final DateTime lastSeen;
+  final int totalTrips;
+  final int badges;
+  final int currentStreak;
+  final int mutualFriends;
+  final bool isFollowing;
+  final String location;
+  final String bio;
+
+  FriendProfile({
+    required this.id,
+    required this.name,
+    required this.username,
+    required this.avatar,
+    required this.isOnline,
+    required this.lastSeen,
+    required this.totalTrips,
+    required this.badges,
+    required this.currentStreak,
+    required this.mutualFriends,
+    required this.isFollowing,
+    required this.location,
+    required this.bio,
   });
 }

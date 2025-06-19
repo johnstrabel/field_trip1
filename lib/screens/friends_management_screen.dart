@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
-import '../data/mock_data.dart';
 
 class FriendsManagementScreen extends StatefulWidget {
   const FriendsManagementScreen({Key? key}) : super(key: key);
@@ -59,22 +58,22 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
       username: '@emma_w',
       avatar: Icons.person_4,
       mutualFriends: 2,
-      requestTime: DateTime.now().subtract(const Duration(hours: 3)),
+      sentAt: DateTime.now().subtract(const Duration(hours: 3)),
     ),
     FriendRequest(
       id: '2',
-      name: 'Jake Miller',
-      username: '@jake_hikes',
+      name: 'David Park',
+      username: '@david_explorer',
       avatar: Icons.person,
-      mutualFriends: 0,
-      requestTime: DateTime.now().subtract(const Duration(days: 1)),
+      mutualFriends: 1,
+      sentAt: DateTime.now().subtract(const Duration(days: 1)),
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -90,20 +89,8 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Friends'),
-        backgroundColor: AppColors.card,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code),
-            onPressed: _showQRCode,
-            tooltip: 'My QR Code',
-          ),
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            onPressed: _scanQRCode,
-            tooltip: 'Scan QR Code',
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.amethyst600,
@@ -111,175 +98,138 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
           unselectedLabelColor: AppColors.textSecond,
           tabs: [
             Tab(
-              text: 'Friends (${_friends.length})',
-              icon: const Icon(Icons.people, size: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Friends'),
+                  if (_friends.isNotEmpty) ...[
+                    const SizedBox(width: AppDimensions.spaceXS),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.amethyst600,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${_friends.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
             Tab(
-              text: 'Requests (${_pendingRequests.length})',
-              icon: const Icon(Icons.person_add, size: 20),
-            ),
-            const Tab(
-              text: 'Add Friends',
-              icon: Icon(Icons.search, size: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Requests'),
+                  if (_pendingRequests.isNotEmpty) ...[
+                    const SizedBox(width: AppDimensions.spaceXS),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.challengeCrimson,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${_pendingRequests.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildFriendsTab(),
-          _buildRequestsTab(),
-          _buildAddFriendsTab(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFriendsTab() {
-    final filteredFriends = _friends.where((friend) {
-      return friend.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          friend.username.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
-
-    return Column(
-      children: [
-        // Search Bar
-        Container(
-          padding: const EdgeInsets.all(AppDimensions.spaceL),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search friends...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _searchQuery = '';
-                        });
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: AppColors.card,
-            ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-          ),
-        ),
-
-        // Friends List
-        Expanded(
-          child: filteredFriends.isEmpty
-              ? _buildEmptyFriendsState()
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceL),
-                  itemCount: filteredFriends.length,
-                  itemBuilder: (context, index) {
-                    return _FriendCard(
-                      friend: filteredFriends[index],
-                      onTap: () => _viewFriendProfile(filteredFriends[index]),
-                      onMessage: () => _messageFriend(filteredFriends[index]),
-                      onChallenge: () => _challengeFriend(filteredFriends[index]),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRequestsTab() {
-    return _pendingRequests.isEmpty
-        ? _buildEmptyRequestsState()
-        : ListView.builder(
+          // Search and Add Friends Section
+          Padding(
             padding: const EdgeInsets.all(AppDimensions.spaceL),
-            itemCount: _pendingRequests.length,
-            itemBuilder: (context, index) {
-              return _FriendRequestCard(
-                request: _pendingRequests[index],
-                onAccept: () => _acceptFriendRequest(_pendingRequests[index]),
-                onDecline: () => _declineFriendRequest(_pendingRequests[index]),
-              );
-            },
-          );
-  }
-
-  Widget _buildAddFriendsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // QR Code Section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppDimensions.spaceL),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.amethyst600, AppColors.amethyst100],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-            ),
             child: Column(
               children: [
-                const Icon(
-                  Icons.qr_code,
-                  color: Colors.white,
-                  size: 64,
+                // Search Bar
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search friends...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                            icon: const Icon(Icons.clear),
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.card,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                 ),
+                
                 const SizedBox(height: AppDimensions.spaceM),
-                Text(
-                  'Share Your QR Code',
-                  style: AppTextStyles.cardTitle.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spaceS),
-                Text(
-                  'Let friends scan your code to add you instantly',
-                  style: AppTextStyles.cardSubtitle.copyWith(
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppDimensions.spaceL),
+                
+                // Add Friends Options
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _showQRCode,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.amethyst600,
-                        ),
-                        icon: const Icon(Icons.qr_code, size: 20),
-                        label: const Text('Show QR'),
+                      child: _QuickActionButton(
+                        icon: Icons.qr_code,
+                        label: 'Show QR',
+                        onTap: _showQRCode,
                       ),
                     ),
                     const SizedBox(width: AppDimensions.spaceM),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _scanQRCode,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white),
-                        ),
-                        icon: const Icon(Icons.qr_code_scanner, size: 20),
-                        label: const Text('Scan QR'),
+                      child: _QuickActionButton(
+                        icon: Icons.qr_code_scanner,
+                        label: 'Scan QR',
+                        onTap: _scanQRCode,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spaceM),
+                    Expanded(
+                      child: _QuickActionButton(
+                        icon: Icons.person_search,
+                        label: 'Search',
+                        onTap: _searchByUsername,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spaceM),
+                    Expanded(
+                      child: _QuickActionButton(
+                        icon: Icons.contacts,
+                        label: 'Contacts',
+                        onTap: _importContacts,
                       ),
                     ),
                   ],
@@ -287,74 +237,14 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
               ],
             ),
           ),
-
-          const SizedBox(height: AppDimensions.spaceL),
-
-          // Search by Username
-          Text(
-            'Search by Username',
-            style: AppTextStyles.sectionTitle,
-          ),
-          const SizedBox(height: AppDimensions.spaceM),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Enter username (e.g., @username)',
-              prefixIcon: const Icon(Icons.alternate_email),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: _searchByUsername,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: AppDimensions.spaceL),
-
-          // Suggested Friends
-          Text(
-            'Suggested Friends',
-            style: AppTextStyles.sectionTitle,
-          ),
-          const SizedBox(height: AppDimensions.spaceM),
-          _buildSuggestedFriends(),
-
-          const SizedBox(height: AppDimensions.spaceL),
-
-          // Import Contacts
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppDimensions.spaceL),
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-              border: Border.all(color: AppColors.stroke),
-            ),
-            child: Column(
+          
+          // Tab Content
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
               children: [
-                Icon(
-                  Icons.contacts,
-                  color: AppColors.amethyst600,
-                  size: 48,
-                ),
-                const SizedBox(height: AppDimensions.spaceM),
-                Text(
-                  'Import from Contacts',
-                  style: AppTextStyles.cardTitle,
-                ),
-                const SizedBox(height: AppDimensions.spaceS),
-                Text(
-                  'Find friends who are already using Field Trip',
-                  style: AppTextStyles.cardSubtitle,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppDimensions.spaceL),
-                ElevatedButton.icon(
-                  onPressed: _importContacts,
-                  icon: const Icon(Icons.contacts),
-                  label: const Text('Import Contacts'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.amethyst600,
-                  ),
-                ),
+                _buildFriendsList(),
+                _buildRequestsList(),
               ],
             ),
           ),
@@ -363,102 +253,88 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
     );
   }
 
-  Widget _buildSuggestedFriends() {
-    final suggestions = [
-      FriendSuggestion(
-        name: 'Jordan Smith',
-        username: '@jordan_trails',
-        avatar: Icons.person,
-        mutualFriends: 2,
-        reason: '2 mutual friends',
-      ),
-      FriendSuggestion(
-        name: 'Casey Taylor',
-        username: '@casey_adventures',
-        avatar: Icons.person_2,
-        mutualFriends: 1,
-        reason: 'Similar interests',
-      ),
-    ];
+  Widget _buildFriendsList() {
+    final filteredFriends = _friends.where((friend) {
+      if (_searchQuery.isEmpty) return true;
+      return friend.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+             friend.username.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
 
-    return Column(
-      children: suggestions.map((suggestion) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
-          padding: const EdgeInsets.all(AppDimensions.spaceL),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.amethyst100,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  suggestion.avatar,
-                  color: AppColors.amethyst600,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceM),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(suggestion.name, style: AppTextStyles.cardTitle),
-                    Text(suggestion.username, style: AppTextStyles.caption),
-                    Text(suggestion.reason, style: AppTextStyles.cardSubtitle),
-                  ],
-                ),
-              ),
-              OutlinedButton(
-                onPressed: () => _sendFriendRequest(suggestion),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.amethyst600,
-                  side: BorderSide(color: AppColors.amethyst600),
-                ),
-                child: const Text('Add'),
-              ),
-            ],
-          ),
+    if (filteredFriends.isEmpty && _searchQuery.isEmpty) {
+      return _buildEmptyFriendsState();
+    }
+
+    if (filteredFriends.isEmpty && _searchQuery.isNotEmpty) {
+      return _buildNoSearchResults();
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      itemCount: filteredFriends.length,
+      separatorBuilder: (context, index) => const SizedBox(height: AppDimensions.spaceM),
+      itemBuilder: (context, index) {
+        final friend = filteredFriends[index];
+        return _FriendCard(
+          friend: friend,
+          onTap: () => _viewFriendProfile(friend),
+          onMessage: () => _messageFriend(friend),
+          onChallenge: () => _challengeFriend(friend),
         );
-      }).toList(),
+      },
+    );
+  }
+
+  Widget _buildRequestsList() {
+    if (_pendingRequests.isEmpty) {
+      return _buildEmptyRequestsState();
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      itemCount: _pendingRequests.length,
+      separatorBuilder: (context, index) => const SizedBox(height: AppDimensions.spaceM),
+      itemBuilder: (context, index) {
+        final request = _pendingRequests[index];
+        return _FriendRequestCard(
+          request: request,
+          onAccept: () => _acceptRequest(request),
+          onDecline: () => _declineRequest(request),
+        );
+      },
     );
   }
 
   Widget _buildEmptyFriendsState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+    return Padding(
+      padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.people_outline,
-              size: 64,
-              color: AppColors.textSecond,
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppColors.amethyst100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.people_outline,
+                size: 60,
+                color: AppColors.amethyst600,
+              ),
             ),
             const SizedBox(height: AppDimensions.spaceL),
             Text(
-              'No Friends Yet',
-              style: AppTextStyles.sectionTitle,
+              'No friends yet',
+              style: AppTextStyles.cardTitle.copyWith(fontSize: 18),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.spaceS),
             Text(
-              'Start building your exploration network by adding friends!',
+              'Start connecting with fellow explorers using the options above. Share your QR code or scan others to begin building your adventure network!',
               style: AppTextStyles.cardSubtitle,
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppDimensions.spaceL),
-            ElevatedButton.icon(
-              onPressed: () => _tabController.animateTo(2),
-              icon: const Icon(Icons.person_add),
-              label: const Text('Add Friends'),
             ),
           ],
         ),
@@ -467,25 +343,64 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
   }
 
   Widget _buildEmptyRequestsState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+    return Padding(
+      padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppColors.info.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.person_add_outlined,
+                size: 60,
+                color: AppColors.info,
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spaceL),
+            Text(
+              'No pending requests',
+              style: AppTextStyles.cardTitle.copyWith(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppDimensions.spaceS),
+            Text(
+              'Friend requests will appear here when other explorers want to connect with you.',
+              style: AppTextStyles.cardSubtitle,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoSearchResults() {
+    return Padding(
+      padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.inbox_outlined,
-              size: 64,
+              Icons.search_off,
+              size: 60,
               color: AppColors.textSecond,
             ),
             const SizedBox(height: AppDimensions.spaceL),
             Text(
-              'No Friend Requests',
-              style: AppTextStyles.sectionTitle,
+              'No results found',
+              style: AppTextStyles.cardTitle,
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.spaceS),
             Text(
-              'Friend requests will appear here when someone wants to connect with you.',
+              'Try searching with a different name or username.',
               style: AppTextStyles.cardSubtitle,
               textAlign: TextAlign.center,
             ),
@@ -595,7 +510,7 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
 
   void _messageFriend(FriendModel friend) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Messaging ${friend.name}...')),
+      SnackBar(content: Text('Opening chat with ${friend.name}...')),
     );
   }
 
@@ -605,10 +520,9 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
     );
   }
 
-  void _acceptFriendRequest(FriendRequest request) {
+  void _acceptRequest(FriendRequest request) {
     setState(() {
-      _pendingRequests.remove(request);
-      // Add to friends list
+      _pendingRequests.removeWhere((r) => r.id == request.id);
       _friends.add(FriendModel(
         id: request.id,
         name: request.name,
@@ -620,28 +534,64 @@ class _FriendsManagementScreenState extends State<FriendsManagementScreen>
         tripCount: 0,
       ));
     });
+    
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${request.name} is now your friend!')),
+      SnackBar(content: Text('Added ${request.name} as a friend!')),
     );
   }
 
-  void _declineFriendRequest(FriendRequest request) {
+  void _declineRequest(FriendRequest request) {
     setState(() {
-      _pendingRequests.remove(request);
+      _pendingRequests.removeWhere((r) => r.id == request.id);
     });
+    
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Declined ${request.name}\'s friend request')),
-    );
-  }
-
-  void _sendFriendRequest(FriendSuggestion suggestion) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Friend request sent to ${suggestion.name}!')),
+      SnackBar(content: Text('Declined friend request from ${request.name}')),
     );
   }
 }
 
 // Helper Widgets
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceM),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+          border: Border.all(color: AppColors.stroke),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.amethyst600, size: 24),
+            const SizedBox(height: AppDimensions.spaceXS),
+            Text(
+              label,
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.amethyst600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _FriendCard extends StatelessWidget {
   final FriendModel friend;
   final VoidCallback onTap;
@@ -657,84 +607,138 @@ class _FriendCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(AppDimensions.spaceM),
-        leading: Stack(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppDimensions.spaceL),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+          border: Border.all(color: AppColors.stroke),
+        ),
+        child: Column(
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.amethyst100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                friend.avatar,
-                color: AppColors.amethyst600,
-                size: 24,
-              ),
-            ),
-            if (friend.isOnline)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+            Row(
+              children: [
+                // Avatar with online status
+                Stack(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppColors.amethyst100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        friend.avatar,
+                        color: AppColors.amethyst600,
+                        size: 24,
+                      ),
+                    ),
+                    if (friend.isOnline)
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                
+                const SizedBox(width: AppDimensions.spaceM),
+                
+                // Friend info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(friend.name, style: AppTextStyles.cardTitle),
+                      Text(friend.username, style: AppTextStyles.cardSubtitle),
+                      const SizedBox(height: AppDimensions.spaceXS),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.people,
+                            size: 14,
+                            color: AppColors.textSecond,
+                          ),
+                          const SizedBox(width: AppDimensions.spaceXS),
+                          Text(
+                            '${friend.mutualFriends} mutual',
+                            style: AppTextStyles.caption,
+                          ),
+                          const SizedBox(width: AppDimensions.spaceM),
+                          Icon(
+                            Icons.map,
+                            size: 14,
+                            color: AppColors.textSecond,
+                          ),
+                          const SizedBox(width: AppDimensions.spaceXS),
+                          Text(
+                            '${friend.tripCount} trips',
+                            style: AppTextStyles.caption,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-          ],
-        ),
-        title: Text(friend.name, style: AppTextStyles.cardTitle),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(friend.username, style: AppTextStyles.caption),
-            Text(
-              friend.isOnline ? 'Online' : _formatLastSeen(friend.lastSeen),
-              style: AppTextStyles.cardSubtitle.copyWith(
-                color: friend.isOnline ? AppColors.success : AppColors.textSecond,
-              ),
+                
+                // Status indicator
+                Column(
+                  children: [
+                    Text(
+                      friend.isOnline ? 'Online' : _formatLastSeen(friend.lastSeen),
+                      style: AppTextStyles.caption.copyWith(
+                        color: friend.isOnline ? AppColors.success : AppColors.textSecond,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: AppDimensions.spaceM),
+            
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onMessage,
+                    icon: const Icon(Icons.message, size: 16),
+                    label: const Text('Message'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.spaceM),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onChallenge,
+                    icon: const Icon(Icons.emoji_events, size: 16),
+                    label: const Text('Challenge'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.amethyst600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        trailing: PopupMenuButton(
-          icon: const Icon(Icons.more_vert),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              onTap: onMessage,
-              child: const Row(
-                children: [
-                  Icon(Icons.message),
-                  SizedBox(width: 8),
-                  Text('Message'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              onTap: onChallenge,
-              child: const Row(
-                children: [
-                  Icon(Icons.emoji_events),
-                  SizedBox(width: 8),
-                  Text('Challenge'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        onTap: onTap,
       ),
     );
   }
@@ -742,7 +746,7 @@ class _FriendCard extends StatelessWidget {
   String _formatLastSeen(DateTime lastSeen) {
     final now = DateTime.now();
     final difference = now.difference(lastSeen);
-
+    
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
@@ -767,69 +771,94 @@ class _FriendRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
       padding: const EdgeInsets.all(AppDimensions.spaceL),
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(color: AppColors.amethyst600.withOpacity(0.3)),
+        border: Border.all(color: AppColors.challengeCrimson.withOpacity(0.3)),
       ),
       child: Column(
         children: [
           Row(
             children: [
+              // Avatar
               Container(
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: AppColors.amethyst100,
+                  color: AppColors.challengeCrimson.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   request.avatar,
-                  color: AppColors.amethyst600,
+                  color: AppColors.challengeCrimson,
                   size: 24,
                 ),
               ),
+              
               const SizedBox(width: AppDimensions.spaceM),
+              
+              // Request info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(request.name, style: AppTextStyles.cardTitle),
-                    Text(request.username, style: AppTextStyles.caption),
-                    if (request.mutualFriends > 0)
-                      Text(
-                        '${request.mutualFriends} mutual friends',
-                        style: AppTextStyles.cardSubtitle,
-                      ),
+                    Text(request.username, style: AppTextStyles.cardSubtitle),
+                    const SizedBox(height: AppDimensions.spaceXS),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.people,
+                          size: 14,
+                          color: AppColors.textSecond,
+                        ),
+                        const SizedBox(width: AppDimensions.spaceXS),
+                        Text(
+                          '${request.mutualFriends} mutual friends',
+                          style: AppTextStyles.caption,
+                        ),
+                      ],
+                    ),
                   ],
+                ),
+              ),
+              
+              // Time indicator
+              Text(
+                _formatRequestTime(request.sentAt),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecond,
                 ),
               ),
             ],
           ),
+          
           const SizedBox(height: AppDimensions.spaceM),
+          
+          // Action buttons
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: onDecline,
-                  icon: const Icon(Icons.close, size: 18),
-                  label: const Text('Decline'),
+                  child: const Text('Decline'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: BorderSide(color: AppColors.error),
+                    padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
                   ),
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
               Expanded(
-                child: ElevatedButton.icon(
+                child: ElevatedButton(
                   onPressed: onAccept,
-                  icon: const Icon(Icons.check, size: 18),
-                  label: const Text('Accept'),
+                  child: const Text('Accept'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.amethyst600,
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
                   ),
                 ),
               ),
@@ -839,9 +868,22 @@ class _FriendRequestCard extends StatelessWidget {
       ),
     );
   }
+
+  String _formatRequestTime(DateTime sentAt) {
+    final now = DateTime.now();
+    final difference = now.difference(sentAt);
+    
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inDays}d ago';
+    }
+  }
 }
 
-// Data Models (reusing from original)
+// Data Models
 class FriendModel {
   final String id;
   final String name;
@@ -870,7 +912,7 @@ class FriendRequest {
   final String username;
   final IconData avatar;
   final int mutualFriends;
-  final DateTime requestTime;
+  final DateTime sentAt;
 
   FriendRequest({
     required this.id,
@@ -878,22 +920,38 @@ class FriendRequest {
     required this.username,
     required this.avatar,
     required this.mutualFriends,
-    required this.requestTime,
+    required this.sentAt,
   });
 }
 
-class FriendSuggestion {
+class FriendProfile {
+  final String id;
   final String name;
   final String username;
   final IconData avatar;
+  final bool isOnline;
+  final DateTime lastSeen;
+  final int totalTrips;
+  final int badges;
+  final int currentStreak;
   final int mutualFriends;
-  final String reason;
+  final bool isFollowing;
+  final String location;
+  final String bio;
 
-  FriendSuggestion({
+  FriendProfile({
+    required this.id,
     required this.name,
     required this.username,
     required this.avatar,
+    required this.isOnline,
+    required this.lastSeen,
+    required this.totalTrips,
+    required this.badges,
+    required this.currentStreak,
     required this.mutualFriends,
-    required this.reason,
+    required this.isFollowing,
+    required this.location,
+    required this.bio,
   });
 }

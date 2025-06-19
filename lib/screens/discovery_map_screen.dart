@@ -252,8 +252,8 @@ class _DiscoveryMapScreenState extends State<DiscoveryMapScreen>
                 decoration: const BoxDecoration(
                   color: AppColors.card,
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(AppDimensions.radiusXL),
-                    topRight: Radius.circular(AppDimensions.radiusXL),
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
                   ),
                 ),
                 child: Column(
@@ -810,8 +810,8 @@ class _LocationDetailsSheet extends StatelessWidget {
       decoration: const BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppDimensions.radiusXL),
-          topRight: Radius.circular(AppDimensions.radiusXL),
+          topLeft: Radius.circular(AppDimensions.radiusL),
+          topRight: Radius.circular(AppDimensions.radiusL),
         ),
       ),
       child: Column(
