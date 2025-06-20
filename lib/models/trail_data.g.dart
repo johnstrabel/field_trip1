@@ -8,7 +8,7 @@ part of 'trail_data.dart';
 
 class TrailPointAdapter extends TypeAdapter<TrailPoint> {
   @override
-  final int typeId = 4;
+  final int typeId = 6;
 
   @override
   TrailPoint read(BinaryReader reader) {
@@ -55,9 +55,52 @@ class TrailPointAdapter extends TypeAdapter<TrailPoint> {
           typeId == other.typeId;
 }
 
+class TrailStatsAdapter extends TypeAdapter<TrailStats> {
+  @override
+  final int typeId = 7;
+
+  @override
+  TrailStats read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return TrailStats(
+      distance: fields[0] as double,
+      duration: fields[1] as Duration,
+      averageSpeed: fields[2] as double,
+      pointCount: fields[3] as int,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, TrailStats obj) {
+    writer
+      ..writeByte(4)
+      ..writeByte(0)
+      ..write(obj.distance)
+      ..writeByte(1)
+      ..write(obj.duration)
+      ..writeByte(2)
+      ..write(obj.averageSpeed)
+      ..writeByte(3)
+      ..write(obj.pointCount);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TrailStatsAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 class TrailDataAdapter extends TypeAdapter<TrailData> {
   @override
-  final int typeId = 5;
+  final int typeId = 8;
 
   @override
   TrailData read(BinaryReader reader) {

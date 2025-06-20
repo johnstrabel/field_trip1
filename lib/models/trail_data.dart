@@ -6,8 +6,8 @@ import 'dart:math' as math;
 part 'trail_data.g.dart';
 
 /// Individual GPS point in a trail
-@HiveType(typeId: 4)
-class TrailPoint extends HiveObject {
+@HiveType(typeId: 6) // Using typeId 6 to avoid conflicts
+class TrailPoint {
   @HiveField(0)
   final double latitude;
 
@@ -49,9 +49,53 @@ class TrailPoint extends HiveObject {
   }
 }
 
+/// Trail statistics
+@HiveType(typeId: 7)
+class TrailStats {
+  @HiveField(0)
+  final double distance; // in meters
+
+  @HiveField(1)
+  final Duration duration;
+
+  @HiveField(2)
+  final double averageSpeed; // in m/s
+
+  @HiveField(3)
+  final int pointCount;
+
+  TrailStats({
+    required this.distance,
+    required this.duration,
+    required this.averageSpeed,
+    required this.pointCount,
+  });
+
+  /// Distance in kilometers
+  double get distanceKm => distance / 1000;
+
+  /// Formatted duration string
+  String get durationFormatted {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+    
+    if (hours > 0) {
+      return '${hours}h ${minutes}m ${seconds}s';
+    } else if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    } else {
+      return '${seconds}s';
+    }
+  }
+
+  /// Speed in km/h
+  double get speedKmh => averageSpeed * 3.6;
+}
+
 /// Complete trail data for a trip
-@HiveType(typeId: 5)
-class TrailData extends HiveObject {
+@HiveType(typeId: 8)
+class TrailData {
   @HiveField(0)
   final String tripId;
 
@@ -122,65 +166,44 @@ class TrailData extends HiveObject {
     );
   }
 
-  /// Get coordinates for map polyline rendering
-  List<Map<String, double>> get coordinates {
+  /// Calculate distance between two trail points using Haversine formula
+  static double _calculateDistance(TrailPoint point1, TrailPoint point2) {
+    const double earthRadius = 6371000; // Earth radius in meters
+    
+    final double lat1Rad = point1.latitude * (math.pi / 180);
+    final double lat2Rad = point2.latitude * (math.pi / 180);
+    final double deltaLatRad = (point2.latitude - point1.latitude) * (math.pi / 180);
+    final double deltaLngRad = (point2.longitude - point1.longitude) * (math.pi / 180);
+
+    final double a = math.sin(deltaLatRad / 2) * math.sin(deltaLatRad / 2) +
+        math.cos(lat1Rad) * math.cos(lat2Rad) *
+        math.sin(deltaLngRad / 2) * math.sin(deltaLngRad / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  /// Convert trail to polyline coordinates for map display
+  List<Map<String, double>> toPolylineCoordinates() {
     return points.map((point) => point.toLatLng()).toList();
   }
 
-  /// Calculate distance between two trail points using Haversine formula
-  static double _calculateDistance(TrailPoint point1, TrailPoint point2) {
-    const double earthRadius = 6371000; // meters
+  /// Get simplified trail for map display (reduces points for performance)
+  List<TrailPoint> getSimplifiedTrail({int maxPoints = 100}) {
+    if (points.length <= maxPoints) return points;
     
-    final lat1Rad = point1.latitude * (math.pi / 180);
-    final lat2Rad = point2.latitude * (math.pi / 180);
-    final deltaLatRad = (point2.latitude - point1.latitude) * (math.pi / 180);
-    final deltaLngRad = (point2.longitude - point1.longitude) * (math.pi / 180);
-
-    final a = math.pow(math.sin(deltaLatRad / 2), 2) +
-        math.cos(lat1Rad) * math.cos(lat2Rad) *
-        math.pow(math.sin(deltaLngRad / 2), 2);
+    final step = points.length / maxPoints;
+    final List<TrailPoint> simplified = [];
     
-    final c = 2 * math.asin(math.sqrt(a));
-    return earthRadius * c;
-  }
-}
-
-/// Trail statistics for display
-class TrailStats {
-  final double distance; // meters
-  final Duration duration;
-  final double averageSpeed; // m/s
-  final int pointCount;
-
-  TrailStats({
-    required this.distance,
-    required this.duration,
-    required this.averageSpeed,
-    required this.pointCount,
-  });
-
-  /// Distance in kilometers with formatting
-  String get distanceKm {
-    return '${(distance / 1000).toStringAsFixed(2)} km';
-  }
-
-  /// Speed in km/h with formatting
-  String get speedKmh {
-    return '${(averageSpeed * 3.6).toStringAsFixed(1)} km/h';
-  }
-
-  /// Duration formatted as HH:MM:SS
-  String get durationFormatted {
-    final hours = duration.inHours;
-    final minutes = (duration.inMinutes % 60);
-    final seconds = (duration.inSeconds % 60);
-    
-    if (hours > 0) {
-      return '${hours}h ${minutes}m ${seconds}s';
-    } else if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    } else {
-      return '${seconds}s';
+    for (int i = 0; i < points.length; i += step.ceil()) {
+      simplified.add(points[i]);
     }
+    
+    // Always include the last point
+    if (simplified.last != points.last) {
+      simplified.add(points.last);
+    }
+    
+    return simplified;
   }
 }

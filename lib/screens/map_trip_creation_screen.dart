@@ -1,10 +1,8 @@
 // lib/screens/map_trip_creation_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
-import 'package:uuid/uuid.dart';
-import '../models/trip.dart';
+import '../models/trip.dart' as model;
+import '../theme/app_theme.dart';
 
 class MapTripCreationScreen extends StatefulWidget {
   const MapTripCreationScreen({Key? key}) : super(key: key);
@@ -14,449 +12,609 @@ class MapTripCreationScreen extends StatefulWidget {
 }
 
 class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
-  List<Waypoint> _waypoints = [];
-  LatLng _currentLocation = const LatLng(50.0755, 14.4378); // Default to Prague
-  bool _locationPermissionGranted = false;
+  int _currentStep = 0;
+  final PageController _pageController = PageController();
   
-  final _titleController = TextEditingController();
-  TripType _selectedType = TripType.standard;
+  // Trip configuration
+  String _tripTitle = '';
+  model.CoreType _selectedCoreType = model.CoreType.explore;
+  String _selectedSubMode = 'standard';
+  bool _isPathStrict = false;
+  final List<model.Waypoint> _waypoints = [];
   
-  Location _location = Location();
+  // Sub-mode options for each core type
+  final Map<model.CoreType, List<Map<String, String>>> _subModeOptions = {
+    model.CoreType.explore: [
+      {'id': 'sightseeing', 'name': 'Sightseeing', 'description': 'Casual exploration and discovery'},
+      {'id': 'photography', 'name': 'Photography', 'description': 'Photo-focused adventure'},
+      {'id': 'cultural', 'name': 'Cultural', 'description': 'Museums, galleries, and cultural sites'},
+    ],
+    model.CoreType.crawl: [
+      {'id': 'social', 'name': 'Social Crawl', 'description': 'Casual bar/pub hopping'},
+      {'id': 'beer_golf', 'name': 'Beer Golf', 'description': 'Competitive drinking game with scoring'},
+      {'id': 'themed', 'name': 'Themed Crawl', 'description': 'Specific theme (craft beer, cocktails, etc.)'},
+    ],
+    model.CoreType.active: [
+      {'id': 'running', 'name': 'Running', 'description': 'Jogging or running route'},
+      {'id': 'cycling', 'name': 'Cycling', 'description': 'Bike route adventure'},
+      {'id': 'hiking', 'name': 'Hiking', 'description': 'Walking or hiking trail'},
+      {'id': 'time_trial', 'name': 'Time Trial', 'description': 'Timed competitive run'},
+    ],
+    model.CoreType.game: [
+      {'id': 'disc_golf', 'name': 'Disc Golf', 'description': 'Disc golf course with scoring'},
+      {'id': 'scavenger_hunt', 'name': 'Scavenger Hunt', 'description': 'Find specific items or locations'},
+      {'id': 'quiz_trail', 'name': 'Quiz Trail', 'description': 'Answer questions at each location'},
+    ],
+  };
 
-  @override
-  void initState() {
-    super.initState();
-    _requestLocationPermission();
-  }
-
-  Future<void> _requestLocationPermission() async {
-    bool serviceEnabled;
-    PermissionStatus permissionGranted;
-
-    serviceEnabled = await _location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await _location.requestService();
-      if (!serviceEnabled) {
-        _showLocationServiceDialog();
-        return;
-      }
-    }
-
-    permissionGranted = await _location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await _location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
-        _showLocationPermissionDialog();
-        return;
-      }
-    }
-
-    setState(() {
-      _locationPermissionGranted = true;
-    });
-    _getCurrentLocation();
-  }
-
-  Future<void> _getCurrentLocation() async {
-    try {
-      final locationData = await _location.getLocation();
+  void _nextStep() {
+    if (_currentStep < 2) {
       setState(() {
-        _currentLocation = LatLng(locationData.latitude!, locationData.longitude!);
+        _currentStep++;
       });
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() {
+        _currentStep--;
+      });
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _createTrip() {
+    if (_tripTitle.isNotEmpty && _waypoints.isNotEmpty) {
+      final trip = model.Trip(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: _tripTitle,
+        waypoints: _waypoints,
+        createdAt: DateTime.now(),
+        coreType: _selectedCoreType,
+        subMode: _selectedSubMode,
+        ruleSetId: _getDefaultRuleSetId(),
+        isPathStrict: _isPathStrict,
+      );
       
-      if (_mapController != null) {
-        _mapController!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: _currentLocation,
-              zoom: 15.0,
-            ),
-          ),
-        );
+      Navigator.of(context).pop(trip);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add a title and at least one waypoint'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  String _getDefaultRuleSetId() {
+    switch (_selectedCoreType) {
+      case model.CoreType.game:
+        return 'standard_${_selectedSubMode}';
+      case model.CoreType.crawl:
+        return _selectedSubMode == 'beer_golf' ? 'beer_golf_standard' : 'default';
+      case model.CoreType.active:
+        return _selectedSubMode == 'time_trial' ? 'time_trial_standard' : 'default';
+      default:
+        return 'default';
+    }
+  }
+
+  void _addSampleWaypoints() {
+    setState(() {
+      _waypoints.clear();
+      
+      switch (_selectedCoreType) {
+        case model.CoreType.explore:
+          _waypoints.addAll([
+            model.Waypoint(name: 'Central Park', note: 'Start your exploration here', latitude: 40.7851, longitude: -73.9683),
+            model.Waypoint(name: 'Museum District', note: 'Visit the local museum', latitude: 40.7794, longitude: -73.9632),
+            model.Waypoint(name: 'Historic Square', note: 'Learn about local history', latitude: 40.7505, longitude: -73.9934),
+          ]);
+          break;
+        case model.CoreType.crawl:
+          _waypoints.addAll([
+            model.Waypoint(name: 'The Craft House', note: 'Start with craft beer', latitude: 40.7505, longitude: -73.9934),
+            model.Waypoint(name: 'Rooftop Lounge', note: 'Enjoy city views', latitude: 40.7549, longitude: -73.9840),
+            model.Waypoint(name: 'Local Pub', note: 'Traditional atmosphere', latitude: 40.7589, longitude: -73.9851),
+          ]);
+          break;
+        case model.CoreType.active:
+          _waypoints.addAll([
+            model.Waypoint(name: 'Running Track Start', note: 'Begin your fitness journey', latitude: 40.7851, longitude: -73.9683),
+            model.Waypoint(name: 'Mile 1 Marker', note: 'First checkpoint', latitude: 40.7739, longitude: -73.9713),
+            model.Waypoint(name: 'Finish Line', note: 'Complete your workout', latitude: 40.7794, longitude: -73.9632),
+          ]);
+          break;
+        case model.CoreType.game:
+          _waypoints.addAll([
+            model.Waypoint(name: 'Hole 1', note: 'Par 3 - Watch the trees', latitude: 40.7282, longitude: -74.0776),
+            model.Waypoint(name: 'Hole 2', note: 'Par 4 - Uphill challenge', latitude: 40.7307, longitude: -74.0723),
+            model.Waypoint(name: 'Hole 3', note: 'Par 3 - Final hole', latitude: 40.7341, longitude: -74.0675),
+          ]);
+          break;
       }
-    } catch (e) {
-      print('Error getting location: $e');
-    }
-  }
-
-  void _showLocationServiceDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Location Service'),
-        content: const Text(
-          'Location service is disabled. Please enable it in your device settings to get your current position.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLocationPermissionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Location Permission'),
-        content: const Text(
-          'Location access is needed to show your current position and help you create trips. You can still use the app by manually navigating the map.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onMapTapped(LatLng position) {
-    _showWaypointDialog(position);
-  }
-
-  void _showWaypointDialog(LatLng position) {
-    final nameController = TextEditingController();
-    final noteController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Waypoint'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Waypoint Name',
-                hintText: 'e.g., Coffee Shop, Viewpoint',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                hintText: 'Add any details about this location',
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.trim().isNotEmpty) {
-                _addWaypoint(position, nameController.text.trim(), noteController.text.trim());
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _addWaypoint(LatLng position, String name, String note) {
-    final waypoint = Waypoint(
-      name: name,
-      note: note,
-      latitude: position.latitude,
-      longitude: position.longitude,
-    );
-
-    final marker = Marker(
-      markerId: MarkerId('waypoint_${_waypoints.length}'),
-      position: position,
-      infoWindow: InfoWindow(
-        title: name,
-        snippet: note.isNotEmpty ? note : null,
-      ),
-      icon: BitmapDescriptor.defaultMarkerWithHue(
-        _getMarkerColor(_selectedType),
-      ),
-    );
-
-    setState(() {
-      _waypoints.add(waypoint);
-      _markers.add(marker);
     });
-  }
-
-  double _getMarkerColor(TripType type) {
-    switch (type) {
-      case TripType.standard:
-        return BitmapDescriptor.hueBlue;
-      case TripType.challenge:
-        return BitmapDescriptor.hueMagenta;
-      case TripType.barcrawl:
-        return BitmapDescriptor.hueOrange;
-      case TripType.fitness:
-        return BitmapDescriptor.hueGreen;
-    }
-  }
-
-  void _removeWaypoint(int index) {
-    setState(() {
-      _waypoints.removeAt(index);
-      // Rebuild markers
-      _markers = _waypoints.asMap().entries.map((entry) {
-        final i = entry.key;
-        final waypoint = entry.value;
-        return Marker(
-          markerId: MarkerId('waypoint_$i'),
-          position: LatLng(waypoint.latitude, waypoint.longitude),
-          infoWindow: InfoWindow(
-            title: waypoint.name,
-            snippet: waypoint.note.isNotEmpty ? waypoint.note : null,
-          ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            _getMarkerColor(_selectedType),
-          ),
-        );
-      }).toSet();
-    });
-  }
-
-  void _saveTrip() {
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a trip title')),
-      );
-      return;
-    }
-
-    if (_waypoints.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one waypoint')),
-      );
-      return;
-    }
-
-    final trip = Trip(
-      id: const Uuid().v4(),
-      title: _titleController.text.trim(),
-      type: _selectedType,
-      waypoints: _waypoints,
-      createdAt: DateTime.now(),
-    );
-
-    Navigator.of(context).pop(trip);
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Trip'),
+        title: const Text('Create New Trip'),
+        backgroundColor: AppColors.card,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            onPressed: _locationPermissionGranted ? _getCurrentLocation : null,
-            tooltip: 'Go to my location',
-          ),
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveTrip,
-          ),
+          if (_currentStep > 0)
+            TextButton(
+              onPressed: _previousStep,
+              child: const Text('Back'),
+            ),
         ],
       ),
       body: Column(
         children: [
-          // Trip Settings Panel
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey.shade50,
-            child: Column(
+          // Progress Indicator
+          _buildProgressIndicator(),
+          
+          // Content
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Trip Title',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<TripType>(
-                        value: _selectedType,
-                        decoration: const InputDecoration(
-                          labelText: 'Trip Type',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        onChanged: (TripType? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              _selectedType = newValue;
-                              // Update marker colors
-                              _markers = _waypoints.asMap().entries.map((entry) {
-                                final i = entry.key;
-                                final waypoint = entry.value;
-                                return Marker(
-                                  markerId: MarkerId('waypoint_$i'),
-                                  position: LatLng(waypoint.latitude, waypoint.longitude),
-                                  infoWindow: InfoWindow(
-                                    title: waypoint.name,
-                                    snippet: waypoint.note.isNotEmpty ? waypoint.note : null,
-                                  ),
-                                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                                    _getMarkerColor(newValue),
-                                  ),
-                                );
-                              }).toSet();
-                            });
-                          }
-                        },
-                        items: TripType.values.map((TripType type) {
-                          return DropdownMenuItem<TripType>(
-                            value: type,
-                            child: Text(type.toString().split('.').last.toUpperCase()),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.place, size: 16),
-                          const SizedBox(width: 4),
-                          Text('${_waypoints.length}'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                _buildStepOne(),
+                _buildStepTwo(),
+                _buildStepThree(),
               ],
             ),
           ),
+          
+          // Bottom Navigation
+          _buildBottomNavigation(),
+        ],
+      ),
+    );
+  }
 
-          // Map
-          Expanded(
-            flex: 3,
-            child: GoogleMap(
-              onMapCreated: (GoogleMapController controller) {
-                _mapController = controller;
-                if (_locationPermissionGranted) {
-                  controller.animateCamera(
-                    CameraUpdate.newCameraPosition(
-                      CameraPosition(
-                        target: _currentLocation,
-                        zoom: 15.0,
-                      ),
-                    ),
-                  );
-                }
-              },
-              initialCameraPosition: CameraPosition(
-                target: _currentLocation,
-                zoom: 13.0,
+  Widget _buildProgressIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      child: Row(
+        children: [
+          for (int i = 0; i < 3; i++) ...[
+            Expanded(
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: i <= _currentStep ? AppColors.amethyst600 : AppColors.stroke,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              onTap: _onMapTapped,
-              markers: _markers,
-              myLocationEnabled: _locationPermissionGranted,
-              myLocationButtonEnabled: false, // We have our own button
-              zoomControlsEnabled: false,
             ),
-          ),
+            if (i < 2) const SizedBox(width: AppDimensions.spaceS),
+          ],
+        ],
+      ),
+    );
+  }
 
-          // Waypoint List
-          Expanded(
-            flex: 1,
-            child: Container(
-              color: Colors.white,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
+  Widget _buildStepOne() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Choose Adventure Type',
+            style: AppTextStyles.sectionTitle,
+          ),
+          const SizedBox(height: AppDimensions.spaceM),
+          Text(
+            'Select the type of adventure you want to create',
+            style: AppTextStyles.cardSubtitle,
+          ),
+          const SizedBox(height: AppDimensions.spaceXL),
+          
+          // Core Type Selection
+          Column(
+            children: model.CoreType.values.map((coreType) {
+              final helper = TripTypeHelper.fromCoreType(coreType);
+              final isSelected = _selectedCoreType == coreType;
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedCoreType = coreType;
+                      _selectedSubMode = _subModeOptions[coreType]!.first['id']!;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppDimensions.spaceL),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                      color: isSelected ? helper.color.withOpacity(0.1) : AppColors.card,
+                      border: Border.all(
+                        color: isSelected ? helper.color : AppColors.stroke,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.list, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Waypoints (${_waypoints.length})',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: helper.color.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                          ),
+                          child: Icon(
+                            helper.icon,
+                            color: helper.color,
+                            size: 24,
+                          ),
                         ),
-                        const Spacer(),
-                        const Text(
-                          'Tap map to add',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        const SizedBox(width: AppDimensions.spaceM),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                helper.displayName,
+                                style: AppTextStyles.cardTitle,
+                              ),
+                              const SizedBox(height: AppDimensions.spaceXS),
+                              Text(
+                                _getCoreTypeDescription(coreType),
+                                style: AppTextStyles.cardSubtitle,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(
+                            Icons.check_circle,
+                            color: helper.color,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCoreTypeDescription(model.CoreType coreType) {
+    switch (coreType) {
+      case model.CoreType.explore:
+        return 'Casual discovery and sightseeing adventures with XP rewards and badges';
+      case model.CoreType.crawl:
+        return 'Social bar and pub adventures with optional drinking games and scoring';
+      case model.CoreType.active:
+        return 'Physical exercise routes: running, biking, hiking with time and distance tracking';
+      case model.CoreType.game:
+        return 'Structured point-based games like disc golf with competitive scorecards';
+    }
+  }
+
+  Widget _buildStepTwo() {
+    final subModes = _subModeOptions[_selectedCoreType]!;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Configure ${TripTypeHelper.fromCoreType(_selectedCoreType).displayName} Trip',
+            style: AppTextStyles.sectionTitle,
+          ),
+          const SizedBox(height: AppDimensions.spaceM),
+          
+          // Trip Title
+          Text(
+            'Trip Title',
+            style: AppTextStyles.cardTitle,
+          ),
+          const SizedBox(height: AppDimensions.spaceS),
+          TextField(
+            decoration: const InputDecoration(
+              hintText: 'Enter a memorable trip name...',
+            ),
+            onChanged: (value) {
+              setState(() {
+                _tripTitle = value;
+              });
+            },
+          ),
+          
+          const SizedBox(height: AppDimensions.spaceL),
+          
+          // Sub-mode Selection
+          Text(
+            'Adventure Style',
+            style: AppTextStyles.cardTitle,
+          ),
+          const SizedBox(height: AppDimensions.spaceM),
+          
+          Column(
+            children: subModes.map((subMode) {
+              final isSelected = _selectedSubMode == subMode['id'];
+              final helper = TripTypeHelper.fromCoreType(_selectedCoreType);
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: AppDimensions.spaceS),
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedSubMode = subMode['id']!;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppDimensions.spaceM),
+                    decoration: BoxDecoration(
+                      color: isSelected ? helper.color.withOpacity(0.1) : AppColors.card,
+                      border: Border.all(
+                        color: isSelected ? helper.color : AppColors.stroke,
+                      ),
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                subMode['name']!,
+                                style: AppTextStyles.cardTitle.copyWith(fontSize: 16),
+                              ),
+                              const SizedBox(height: AppDimensions.spaceXS),
+                              Text(
+                                subMode['description']!,
+                                style: AppTextStyles.cardSubtitle,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(
+                            Icons.check_circle,
+                            color: helper.color,
+                            size: 20,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          
+          // Path Strictness (for Active trips)
+          if (_selectedCoreType == model.CoreType.active) ...[
+            const SizedBox(height: AppDimensions.spaceL),
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceM),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                border: Border.all(color: AppColors.stroke),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.route,
+                    color: TripTypeHelper.fromCoreType(_selectedCoreType).color,
+                  ),
+                  const SizedBox(width: AppDimensions.spaceM),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Strict Path Following',
+                          style: AppTextStyles.cardTitle.copyWith(fontSize: 16),
+                        ),
+                        Text(
+                          'Require users to follow the exact route order',
+                          style: AppTextStyles.cardSubtitle,
                         ),
                       ],
                     ),
                   ),
-                  Expanded(
-                    child: _waypoints.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Tap on the map to add waypoints',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: _waypoints.length,
-                            itemBuilder: (context, index) {
-                              final waypoint = _waypoints[index];
-                              return ListTile(
-                                dense: true,
-                                leading: CircleAvatar(
-                                  radius: 12,
-                                  child: Text('${index + 1}'),
-                                ),
-                                title: Text(waypoint.name),
-                                subtitle: waypoint.note.isNotEmpty 
-                                    ? Text(waypoint.note, maxLines: 1, overflow: TextOverflow.ellipsis)
-                                    : Text('${waypoint.latitude.toStringAsFixed(4)}, ${waypoint.longitude.toStringAsFixed(4)}'),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete, size: 20),
-                                  onPressed: () => _removeWaypoint(index),
-                                ),
-                              );
-                            },
-                          ),
+                  Switch(
+                    value: _isPathStrict,
+                    onChanged: (value) {
+                      setState(() {
+                        _isPathStrict = value;
+                      });
+                    },
+                    activeColor: TripTypeHelper.fromCoreType(_selectedCoreType).color,
                   ),
                 ],
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepThree() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add Waypoints',
+            style: AppTextStyles.sectionTitle,
+          ),
+          const SizedBox(height: AppDimensions.spaceM),
+          Text(
+            'Add locations for your ${TripTypeHelper.fromCoreType(_selectedCoreType).displayName.toLowerCase()} adventure',
+            style: AppTextStyles.cardSubtitle,
+          ),
+          const SizedBox(height: AppDimensions.spaceL),
+          
+          // Quick Sample Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _addSampleWaypoints,
+              icon: const Icon(Icons.auto_awesome),
+              label: Text('Add Sample ${TripTypeHelper.fromCoreType(_selectedCoreType).displayName} Waypoints'),
+            ),
+          ),
+          
+          const SizedBox(height: AppDimensions.spaceL),
+          
+          // Waypoints List
+          if (_waypoints.isNotEmpty) ...[
+            Text(
+              'Waypoints (${_waypoints.length})',
+              style: AppTextStyles.cardTitle,
+            ),
+            const SizedBox(height: AppDimensions.spaceM),
+            Column(
+              children: _waypoints.asMap().entries.map((entry) {
+                final index = entry.key;
+                final waypoint = entry.value;
+                final helper = TripTypeHelper.fromCoreType(_selectedCoreType);
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: AppDimensions.spaceS),
+                  padding: const EdgeInsets.all(AppDimensions.spaceM),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    border: Border.all(color: helper.color.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: helper.color,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppDimensions.spaceM),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              waypoint.name,
+                              style: AppTextStyles.cardTitle.copyWith(fontSize: 16),
+                            ),
+                            if (waypoint.note.isNotEmpty) ...[
+                              const SizedBox(height: AppDimensions.spaceXS),
+                              Text(
+                                waypoint.note,
+                                style: AppTextStyles.cardSubtitle,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceXL),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                border: Border.all(color: AppColors.stroke, style: BorderStyle.solid),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 48,
+                    color: AppColors.textSecond,
+                  ),
+                  const SizedBox(height: AppDimensions.spaceM),
+                  Text(
+                    'No waypoints added yet',
+                    style: AppTextStyles.cardTitle,
+                  ),
+                  const SizedBox(height: AppDimensions.spaceS),
+                  Text(
+                    'Add waypoints to create your trip route',
+                    style: AppTextStyles.cardSubtitle,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 2,
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _saveTrip,
-        icon: const Icon(Icons.save),
-        label: const Text('Save Trip'),
+      child: Row(
+        children: [
+          if (_currentStep > 0)
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _previousStep,
+                child: const Text('Previous'),
+              ),
+            ),
+          if (_currentStep > 0) const SizedBox(width: AppDimensions.spaceM),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _currentStep == 2 ? _createTrip : _nextStep,
+              child: Text(_currentStep == 2 ? 'Create Trip' : 'Next'),
+            ),
+          ),
+        ],
       ),
     );
   }
