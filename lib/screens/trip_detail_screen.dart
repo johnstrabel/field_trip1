@@ -2,408 +2,418 @@
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:uuid/uuid.dart';
 import '../models/trip.dart' as model;
-import '../models/trail_data.dart' as trail;
-import '../services/location_tracking_service.dart';
+import '../theme/app_theme.dart';
 
 class TripDetailScreen extends StatefulWidget {
   final model.Trip trip;
-  const TripDetailScreen({Key? key, required this.trip}) : super(key: key);
+  final model.Badge? badge;
+
+  const TripDetailScreen({
+    Key? key, 
+    required this.trip,
+    this.badge,
+  }) : super(key: key);
 
   @override
   _TripDetailScreenState createState() => _TripDetailScreenState();
 }
 
 class _TripDetailScreenState extends State<TripDetailScreen> {
-  model.Badge? _badge;
-  late LocationTrackingService _trackingService;
-  trail.TrailStats? _currentStats;
-
-  @override
-  void initState() {
-    super.initState();
-    _trackingService = LocationTrackingService();
-    _trackingService.addListener(_onTrackingUpdate);
-  }
-
-  @override
-  void dispose() {
-    _trackingService.removeListener(_onTrackingUpdate);
-    super.dispose();
-  }
-
-  void _onTrackingUpdate() {
-    if (_trackingService.isTracking && _trackingService.activeTripId == widget.trip.id) {
-      setState(() {
-        _currentStats = _trackingService.getTrailStats();
-      });
-    }
-  }
+  bool _isTracking = false;
 
   Future<void> _toggleTracking() async {
-    if (_trackingService.isTracking && _trackingService.activeTripId == widget.trip.id) {
-      // Stop tracking
-      final completedTrail = await _trackingService.stopTracking();
-      
-      if (completedTrail.isNotEmpty) {
-        // Save trail data
-        final trailData = trail.TrailData.fromTrackingSession(widget.trip.id, completedTrail);
-        final trailBox = Hive.box<trail.TrailData>('trail_data');
-        await trailBox.put('${widget.trip.id}_${DateTime.now().millisecondsSinceEpoch}', trailData);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Trail saved! ${trailData.stats.distanceKm} in ${trailData.stats.durationFormatted}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-      
-      setState(() {
-        _currentStats = null;
-      });
+    setState(() {
+      _isTracking = !_isTracking;
+    });
+
+    if (_isTracking) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎯 Live tracking started for ${widget.trip.title}!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     } else {
-      // Start tracking
-      final success = await _trackingService.startTracking(widget.trip.id);
-      
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Live tracking started! 📍'),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to start tracking. Check location permissions.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📍 Tracking stopped'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
     }
   }
 
-  Future<void> _handleCompletion() async {
-    // If tracking is active, stop it first
-    if (_trackingService.isTracking && _trackingService.activeTripId == widget.trip.id) {
-      await _toggleTracking();
-    }
+  Future<void> _markAsCompleted() async {
+    try {
+      final tripBox = Hive.box<model.Trip>('trips');
+      
+      // Update trip
+      widget.trip.completed = true;
+      widget.trip.badgeEarned = true;
+      await tripBox.put(widget.trip.id, widget.trip);
 
-    // Handle completion logic
-    if (!widget.trip.completed) {
-      // First-time completion → award badge
-      if (!widget.trip.badgeEarned) {
-        widget.trip.completed = true;
-        widget.trip.badgeEarned = true;
-        _badge = model.Badge(
-          id: const Uuid().v4(),
-          tripId: widget.trip.id,
-          label: 'Badge for "${widget.trip.title}"',
-          earnedAt: DateTime.now(),
-          type: widget.trip.type,
-        );
+      // Create badge using backward compatibility method
+      final badgeBox = Hive.box<model.Badge>('badges');
+      final badge = model.Badge.fromOldType(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        tripId: widget.trip.id,
+        label: '${widget.trip.type.toString().split('.').last.toUpperCase()} Explorer',
+        earnedAt: DateTime.now(),
+        type: widget.trip.type,
+      );
+      await badgeBox.put(badge.id, badge);
 
-        // Show the congratulations dialog
-        await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('🎉 Congratulations!'),
-            content: Text('You\'ve earned the "${widget.trip.title}" badge!'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Awesome!'),
-              ),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 Trip completed! Badge earned!'),
+            backgroundColor: AppColors.success,
           ),
         );
-
-        // Pop back and return the badge
-        Navigator.of(context).pop(_badge);
-      } else {
-        // Already earned → show error
-        await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Hold up!'),
-            content: Text(
-              'Looks like you\'ve already completed "${widget.trip.title}" and earned that badge. No double-dipping!',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Got it'),
-              ),
-            ],
-          ),
-        );
+        Navigator.of(context).pop();
       }
-    } else {
-      // Trip is currently completed and user tapped "Mark Incomplete"
-      setState(() => widget.trip.completed = false);
-      Navigator.of(context).pop(null);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error completing trip: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
-  Widget _buildTrackingControls() {
-    final isCurrentlyTracking = _trackingService.isTracking && _trackingService.activeTripId == widget.trip.id;
+  @override
+  Widget build(BuildContext context) {
+    final typeHelper = TripTypeHelper.fromType(widget.trip.type);
     
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.trip.title),
+        backgroundColor: typeHelper.color,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  isCurrentlyTracking ? Icons.stop_circle : Icons.play_circle,
-                  color: isCurrentlyTracking ? Colors.red : Colors.green,
-                  size: 24,
+            // Header Section
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    typeHelper.color,
+                    typeHelper.color.withOpacity(0.1),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Live Tracking',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                if (isCurrentlyTracking)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.spaceL),
+                child: Column(
+                  children: [
+                    // Trip Type Icon
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(40),
+                        boxShadow: [
+                          BoxShadow(
+                            color: typeHelper.color.withOpacity(0.3),
+                            blurRadius: 15,
+                            spreadRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        typeHelper.icon,
+                        size: 40,
+                        color: typeHelper.color,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    
+                    const SizedBox(height: AppDimensions.spaceM),
+                    
+                    // Trip Title
+                    Text(
+                      widget.trip.title,
+                      style: AppTextStyles.heroTitle.copyWith(
+                        color: Colors.white,
+                        fontSize: 24,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    
+                    const SizedBox(height: AppDimensions.spaceS),
+                    
+                    // Trip Type and Status
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimensions.spaceM,
+                            vertical: AppDimensions.spaceS,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                          ),
+                          child: Text(
+                            typeHelper.displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'LIVE',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: AppDimensions.spaceM),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimensions.spaceM,
+                            vertical: AppDimensions.spaceS,
+                          ),
+                          decoration: BoxDecoration(
+                            color: widget.trip.completed 
+                                ? AppColors.success.withOpacity(0.2)
+                                : AppColors.warning.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                          ),
+                          child: Text(
+                            widget.trip.completed ? 'Completed' : 'Planned',
+                            style: TextStyle(
+                              color: widget.trip.completed 
+                                  ? AppColors.success 
+                                  : AppColors.warning,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-              ],
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            
-            if (isCurrentlyTracking && _currentStats != null) ...[
-              Row(
+
+            // Stats Section
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.spaceL),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Expanded(
-                    child: _StatTile(
-                      icon: Icons.straighten,
-                      label: 'Distance',
-                      value: _currentStats!.distanceKm,
-                      color: Colors.blue,
-                    ),
+                  _StatTile(
+                    icon: Icons.location_on,
+                    label: 'Waypoints',
+                    value: '${widget.trip.waypoints.length}',
+                    color: typeHelper.color,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatTile(
-                      icon: Icons.timer,
-                      label: 'Duration',
-                      value: _currentStats!.durationFormatted,
-                      color: Colors.orange,
-                    ),
+                  _StatTile(
+                    icon: Icons.calendar_today,
+                    label: 'Created',
+                    value: _formatDate(widget.trip.createdAt),
+                    color: typeHelper.color,
                   ),
+                  if (widget.trip.badgeEarned)
+                    _StatTile(
+                      icon: Icons.emoji_events,
+                      label: 'Badge',
+                      value: 'Earned',
+                      color: AppColors.success,
+                    ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
+            ),
+
+            // Action Buttons
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceL),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: _StatTile(
-                      icon: Icons.speed,
-                      label: 'Speed',
-                      value: _currentStats!.speedKmh,
-                      color: Colors.green,
+                  // Live Tracking Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _toggleTracking,
+                      icon: Icon(_isTracking ? Icons.stop : Icons.play_arrow),
+                      label: Text(_isTracking ? 'Stop Live Tracking' : 'Start Live Tracking'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isTracking ? AppColors.error : typeHelper.color,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppDimensions.spaceM,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StatTile(
-                      icon: Icons.place,
-                      label: 'Points',
-                      value: '${_currentStats!.pointCount}',
-                      color: Colors.purple,
+                  
+                  const SizedBox(height: AppDimensions.spaceM),
+                  
+                  // Complete Trip Button (only if not completed)
+                  if (!widget.trip.completed)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _markAsCompleted,
+                        icon: const Icon(Icons.check_circle),
+                        label: const Text('Mark as Completed'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.success,
+                          side: const BorderSide(color: AppColors.success),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppDimensions.spaceM,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
-              const SizedBox(height: 16),
+            ),
+
+            const SizedBox(height: AppDimensions.spaceL),
+
+            // Waypoints Section
+            Container(
+              margin: const EdgeInsets.all(AppDimensions.spaceL),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                border: Border.all(color: AppColors.stroke),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(AppDimensions.spaceL),
+                    child: Row(
+                      children: [
+                        Icon(Icons.route, color: typeHelper.color),
+                        const SizedBox(width: AppDimensions.spaceS),
+                        Text(
+                          'Route Waypoints',
+                          style: AppTextStyles.sectionTitle,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ...widget.trip.waypoints.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final waypoint = entry.value;
+                    
+                    return Container(
+                      padding: const EdgeInsets.all(AppDimensions.spaceL),
+                      decoration: BoxDecoration(
+                        border: index < widget.trip.waypoints.length - 1
+                            ? const Border(bottom: BorderSide(color: AppColors.stroke))
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          // Waypoint Number
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: typeHelper.color,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          
+                          const SizedBox(width: AppDimensions.spaceM),
+                          
+                          // Waypoint Info
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  waypoint.name,
+                                  style: AppTextStyles.cardTitle,
+                                ),
+                                if (waypoint.note.isNotEmpty) ...[
+                                  const SizedBox(height: AppDimensions.spaceXS),
+                                  Text(
+                                    waypoint.note,
+                                    style: AppTextStyles.cardSubtitle,
+                                  ),
+                                ],
+                                const SizedBox(height: AppDimensions.spaceXS),
+                                Text(
+                                  '${waypoint.latitude.toStringAsFixed(4)}, ${waypoint.longitude.toStringAsFixed(4)}',
+                                  style: AppTextStyles.caption,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+
+            // Badge Section (if earned)
+            if (widget.trip.badgeEarned) ...[
+              Container(
+                margin: const EdgeInsets.all(AppDimensions.spaceL),
+                padding: const EdgeInsets.all(AppDimensions.spaceL),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.emoji_events,
+                      size: 48,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(height: AppDimensions.spaceM),
+                    Text(
+                      'Achievement Unlocked!',
+                      style: AppTextStyles.cardTitle.copyWith(
+                        color: AppColors.success,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spaceS),
+                    Text(
+                      '${typeHelper.displayName} Explorer Badge',
+                      style: AppTextStyles.cardSubtitle,
+                    ),
+                  ],
+                ),
+              ),
             ],
-            
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _toggleTracking,
-                icon: Icon(isCurrentlyTracking ? Icons.stop : Icons.play_arrow),
-                label: Text(isCurrentlyTracking ? 'Stop Tracking' : 'Start Live Tracking'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isCurrentlyTracking ? Colors.red : Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            
-            if (!isCurrentlyTracking)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Track your real-time movement and create a trail of your exploration!',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.trip.title)),
-      body: ListView(
-        children: [
-          // Trip Info
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.flag, color: Colors.teal),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Trip Details',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Type: ${widget.trip.type.toString().split('.').last.toUpperCase()}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Created: ${widget.trip.createdAt.toLocal().toString().split(' ')[0]}',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                    if (widget.trip.completed) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                          const SizedBox(width: 4),
-                          Text('Completed', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
-                          if (widget.trip.badgeEarned) ...[
-                            const SizedBox(width: 12),
-                            const Icon(Icons.emoji_events, color: Colors.amber, size: 16),
-                            const SizedBox(width: 4),
-                            Text('Badge Earned', style: TextStyle(color: Colors.amber.shade700, fontWeight: FontWeight.w600)),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Live Tracking Controls
-          _buildTrackingControls(),
-
-          // Completion Button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: _handleCompletion,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.trip.completed ? Colors.grey : Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text(
-                widget.trip.completed ? 'Mark Incomplete' : 'Mark Completed',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
-
-          // Waypoints
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.place, color: Colors.teal),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Waypoints (${widget.trip.waypoints.length})',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ...widget.trip.waypoints.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final waypoint = entry.value;
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
-                          radius: 16,
-                          child: Text('${index + 1}'),
-                        ),
-                        title: Text(waypoint.name),
-                        subtitle: waypoint.note.isNotEmpty ? Text(waypoint.note) : null,
-                        trailing: Text(
-                          '${waypoint.latitude.toStringAsFixed(4)}, ${waypoint.longitude.toStringAsFixed(4)}',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                        ),
-                      );
-                    }).toList(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date).inDays;
+    
+    if (difference == 0) return 'Today';
+    if (difference == 1) return 'Yesterday';
+    if (difference < 7) return '${difference}d ago';
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
@@ -423,29 +433,27 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppDimensions.spaceM),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: AppDimensions.spaceS),
           Text(
             value,
-            style: TextStyle(
+            style: AppTextStyles.cardTitle.copyWith(
               color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 16,
             ),
           ),
           Text(
             label,
-            style: TextStyle(
+            style: AppTextStyles.caption.copyWith(
               color: color.withOpacity(0.8),
-              fontSize: 10,
             ),
           ),
         ],

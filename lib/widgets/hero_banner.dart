@@ -45,7 +45,7 @@ class HeroBanner extends StatelessWidget {
                 child: const Icon(
                   Icons.explore,
                   color: Colors.white,
-                  size: AppDimensions.iconSizeL,
+                  size: 32.0,
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
@@ -60,7 +60,11 @@ class HeroBanner extends StatelessWidget {
                     const SizedBox(height: AppDimensions.spaceXS),
                     Text(
                       'Continue where you left off or try something new.',
-                      style: AppTextStyles.heroSubtitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
@@ -73,9 +77,10 @@ class HeroBanner extends StatelessWidget {
           // Additional motivational text (replacing the buttons)
           Text(
             'Discover new places, track your adventures, and collect badges as you explore the world around you.',
-            style: AppTextStyles.heroSubtitle.copyWith(
+            style: const TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white70,
+              fontWeight: FontWeight.w300,
             ),
           ),
         ],

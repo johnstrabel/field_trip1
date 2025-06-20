@@ -42,7 +42,7 @@ class DiscoveryCard extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: iconColor ?? AppColors.amethyst600,
-                  size: AppDimensions.iconSizeL,
+                  size: 32,
                 ),
               ),
               
@@ -51,7 +51,11 @@ class DiscoveryCard extends StatelessWidget {
               // Title
               Text(
                 title,
-                style: AppTextStyles.cardTitle,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -61,7 +65,11 @@ class DiscoveryCard extends StatelessWidget {
               // Subtitle
               Text(
                 subtitle,
-                style: AppTextStyles.cardSubtitle,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textSecond,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
