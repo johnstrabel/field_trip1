@@ -66,15 +66,19 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
 
   void _createTrip() {
     if (_tripTitle.isNotEmpty && _waypoints.isNotEmpty) {
+      // Create trip with new model structure
       final trip = model.Trip(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: _tripTitle,
-        oldType: _selectedTripType,
+        oldType: _selectedTripType,  // Keep for backward compatibility
         waypoints: _waypoints,
         createdAt: DateTime.now(),
         completed: false,
         badgeEarned: false,
-        coreType: _convertTripTypeToCore(_selectedTripType),
+        coreType: _migrateTripTypeToCore(_selectedTripType),
+        subMode: _getSubModeForType(_selectedTripType),
+        ruleSetId: 'default',
+        isPathStrict: false,
       );
       
       Navigator.of(context).pop(trip);
@@ -89,7 +93,7 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
   }
 
   // Helper method to convert old TripType to new CoreType
-  model.CoreType _convertTripTypeToCore(model.TripType oldType) {
+  model.CoreType _migrateTripTypeToCore(model.TripType oldType) {
     switch (oldType) {
       case model.TripType.standard:
         return model.CoreType.explore;
@@ -99,6 +103,19 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
         return model.CoreType.active;
       case model.TripType.challenge:
         return model.CoreType.game;
+    }
+  }
+
+  String _getSubModeForType(model.TripType type) {
+    switch (type) {
+      case model.TripType.standard:
+        return 'sightseeing';
+      case model.TripType.barcrawl:
+        return 'social';
+      case model.TripType.fitness:
+        return 'exercise';
+      case model.TripType.challenge:
+        return 'competitive';
     }
   }
 
@@ -116,8 +133,8 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
           break;
         case model.TripType.barcrawl:
           _waypoints.addAll([
-            model.Waypoint(name: 'The Craft House', note: 'Start with craft beer', latitude: 40.7505, longitude: -73.9934),
-            model.Waypoint(name: 'Rooftop Lounge', note: 'Enjoy city views', latitude: 40.7549, longitude: -73.9840),
+            model.Waypoint(name: 'The Craft House', note: 'Great IPAs', latitude: 40.7505, longitude: -73.9934),
+            model.Waypoint(name: 'Rooftop Lounge', note: 'City views', latitude: 40.7549, longitude: -73.9840),
             model.Waypoint(name: 'Local Pub', note: 'Traditional atmosphere', latitude: 40.7589, longitude: -73.9851),
           ]);
           break;
@@ -161,7 +178,6 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
             child: Row(
               children: List.generate(3, (index) {
                 final isActive = index <= _currentStep;
-                final isCompleted = index < _currentStep;
                 
                 return Expanded(
                   child: Container(
@@ -259,7 +275,8 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
           Column(
             children: model.TripType.values.map((tripType) {
               final isSelected = tripType == _selectedTripType;
-              final typeHelper = TripTypeHelper.fromType(tripType);
+              final coreType = _migrateTripTypeToCore(tripType);
+              final typeHelper = TripTypeHelper.fromCoreType(coreType);
               
               return Container(
                 margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
@@ -404,10 +421,13 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
                     itemCount: _waypoints.length,
                     itemBuilder: (context, index) {
                       final waypoint = _waypoints[index];
+                      final coreType = _migrateTripTypeToCore(_selectedTripType);
+                      final typeHelper = TripTypeHelper.fromCoreType(coreType);
+                      
                       return Card(
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: TripTypeHelper.fromType(_selectedTripType).color,
+                            backgroundColor: typeHelper.color,
                             child: Text(
                               '${index + 1}',
                               style: const TextStyle(
@@ -437,7 +457,8 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
   }
 
   Widget _buildStepThree() {
-    final typeHelper = TripTypeHelper.fromType(_selectedTripType);
+    final coreType = _migrateTripTypeToCore(_selectedTripType);
+    final typeHelper = TripTypeHelper.fromCoreType(coreType);
     
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.spaceL),

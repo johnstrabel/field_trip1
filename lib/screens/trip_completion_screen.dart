@@ -34,23 +34,47 @@ class _TripCompletionScreenState extends State<TripCompletionScreen> {
       
       await tripBox.put(widget.trip.id, widget.trip);
 
-      // Create and save badge using your actual Badge model
+      // Create and save badge using new model
       final badgeBox = Hive.box<model.Badge>('badges');
+      final typeHelper = TripTypeHelper.fromTrip(widget.trip);
+      
       final badge = model.Badge(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        tripId: widget.trip.id,  // Using your actual field name
-        label: '${widget.trip.type.toString().split('.').last} Explorer', // Using 'label' not 'name'
+        tripId: widget.trip.id,
+        label: '${typeHelper.displayName} Explorer',
         earnedAt: DateTime.now(),
-        type: widget.trip.type,  // Using 'type' not 'tripType'
+        oldType: widget.trip.oldType,  // May be null for new trips
+        coreType: widget.trip.currentType,  // Always use currentType
       );
       await badgeBox.put(badge.id, badge);
+
+      // Save trail data
+      final trailBox = await Hive.openBox<TrailData>('trails');
+      await trailBox.put(widget.trip.id, widget.trailData);
+
+      // Create score card for competitive modes
+      if (widget.trip.currentType == model.CoreType.game && !_isPrivate) {
+        final scoreCardBox = Hive.box<model.ScoreCard>('scorecards');
+        final scoreCard = model.ScoreCard(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          tripId: widget.trip.id,
+          userId: 'current_user', // Replace with actual user ID
+          perWaypointScores: List.generate(widget.trip.waypoints.length, (i) => 100),
+          totalScore: widget.trip.waypoints.length * 100,
+          penalties: [],
+          bonuses: ['Completion Bonus'],
+          createdAt: DateTime.now(),
+        );
+        await scoreCardBox.put(scoreCard.id, scoreCard);
+      }
 
       // Show success and navigate back
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 Trip completed! Badge earned!'),
+          SnackBar(
+            content: Text('🎉 ${typeHelper.displayName} trip completed! Badge earned!'),
             backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
           ),
         );
         
@@ -75,15 +99,14 @@ class _TripCompletionScreenState extends State<TripCompletionScreen> {
         content: const Text('Are you sure you want to discard this adventure? All tracking data will be lost.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Keep'),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.of(context).popUntil((route) => route.isFirst); // Back to main
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Discard'),
           ),
         ],
@@ -91,291 +114,310 @@ class _TripCompletionScreenState extends State<TripCompletionScreen> {
     );
   }
 
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    
-    if (hours > 0) {
-      return '${hours}h ${minutes}m';
-    } else {
-      return '${minutes}m';
-    }
-  }
-
-  // Helper methods to format stats data
-  String _getFormattedDistance() {
-    final distance = widget.trailData.stats.distance;
-    if (distance >= 1000) {
-      return '${(distance / 1000).toStringAsFixed(1)} km';
-    } else {
-      return '${distance.toStringAsFixed(0)} m';
-    }
-  }
-
-  String _getFormattedSpeed() {
-    final speed = widget.trailData.stats.speed;
-    return '${speed.toStringAsFixed(1)} km/h';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final stats = widget.trailData.stats;
+    final typeHelper = TripTypeHelper.fromTrip(widget.trip);
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trip Complete!'),
-        backgroundColor: AppColors.success,
+        title: Text('Trip Complete!'),
+        backgroundColor: typeHelper.color,
         foregroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: false,
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.success, AppColors.successLight],
+            colors: [
+              typeHelper.color,
+              typeHelper.color.withOpacity(0.1),
+            ],
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // Success Header
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.spaceXXL),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(40),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppDimensions.spaceL),
+            child: Column(
+              children: [
+                // Celebration Header
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.spaceXL),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(60),
+                          boxShadow: [
+                            BoxShadow(
+                              color: typeHelper.color.withOpacity(0.3),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.emoji_events,
+                          size: 60,
+                          color: typeHelper.color,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: AppColors.success,
-                        size: 48,
+                      const SizedBox(height: AppDimensions.spaceL),
+                      Text(
+                        'Adventure Complete!',
+                        style: AppTextStyles.heroTitle.copyWith(
+                          color: Colors.white,
+                          fontSize: 28,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: AppDimensions.spaceL),
-                    Text(
-                      'Adventure Complete!',
-                      style: AppTextStyles.heading.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: AppDimensions.spaceM),
+                      Text(
+                        widget.trip.title,
+                        style: AppTextStyles.sectionTitle.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: AppDimensions.spaceS),
-                    Text(
-                      widget.trip.title,  // Using your actual field name
-                      style: AppTextStyles.subtitle.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      
+                      // Show sub-mode if not standard
+                      if (widget.trip.subMode != 'standard') ...[
+                        const SizedBox(height: AppDimensions.spaceS),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppDimensions.spaceM,
+                            vertical: AppDimensions.spaceXS,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                          ),
+                          child: Text(
+                            widget.trip.subMode.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // Stats Summary
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.all(AppDimensions.spaceL),
+                // Stats Card
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: AppDimensions.spaceL),
                   padding: const EdgeInsets.all(AppDimensions.spaceL),
                   decoration: BoxDecoration(
-                    color: AppColors.card,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Your Adventure Stats',
-                        style: AppTextStyles.sectionTitle,
+                      Row(
+                        children: [
+                          Icon(typeHelper.icon, color: typeHelper.color),
+                          const SizedBox(width: AppDimensions.spaceS),
+                          Text(
+                            '${typeHelper.displayName} Adventure',
+                            style: AppTextStyles.cardTitle,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: AppDimensions.spaceL),
                       
-                      // Stats Grid
+                      // Trip Stats
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.straighten,
-                              title: 'Distance',
-                              value: _getFormattedDistance(),
-                            ),
+                          _buildStatColumn(
+                            'Waypoints',
+                            '${widget.trip.waypoints.length}',
+                            Icons.location_on,
                           ),
-                          const SizedBox(width: AppDimensions.spaceM),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.schedule,
-                              title: 'Duration',
-                              value: _formatDuration(stats.duration),
-                            ),
+                          _buildStatColumn(
+                            'Distance',
+                            '${(widget.trailData.totalDistance / 1000).toStringAsFixed(1)} km',
+                            Icons.straighten,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: AppDimensions.spaceM),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.speed,
-                              title: 'Avg Speed',
-                              value: _getFormattedSpeed(),
-                            ),
-                          ),
-                          const SizedBox(width: AppDimensions.spaceM),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.place,
-                              title: 'Points',
-                              value: '${widget.trailData.points.length}',
-                            ),
+                          _buildStatColumn(
+                            'Duration',
+                            _formatDuration(widget.trailData.duration),
+                            Icons.timer,
                           ),
                         ],
                       ),
                       
-                      const SizedBox(height: AppDimensions.spaceXXL),
-                      
-                      // Privacy Toggle
-                      Container(
-                        padding: const EdgeInsets.all(AppDimensions.spaceL),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                        ),
-                        child: Row(
+                      // Additional stats for competitive modes
+                      if (widget.trip.currentType == model.CoreType.game) ...[
+                        const SizedBox(height: AppDimensions.spaceL),
+                        const Divider(),
+                        const SizedBox(height: AppDimensions.spaceL),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Icon(
-                              _isPrivate ? Icons.lock : Icons.public,
-                              color: AppColors.textSecond,
+                            _buildStatColumn(
+                              'Points',
+                              '${widget.trip.waypoints.length * 100}',
+                              Icons.star,
                             ),
-                            const SizedBox(width: AppDimensions.spaceM),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _isPrivate ? 'Private Trip' : 'Share with Friends',
-                                    style: AppTextStyles.body.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    _isPrivate 
-                                        ? 'Only you can see this adventure'
-                                        : 'Friends can see and try this trip',
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.textSecond,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            _buildStatColumn(
+                              'Avg Speed',
+                              '${widget.trailData.stats.speedKmh.toStringAsFixed(1)} km/h',
+                              Icons.speed,
                             ),
-                            Switch(
-                              value: !_isPrivate,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isPrivate = !value;
-                                });
-                              },
-                              activeColor: AppColors.amethyst600,
+                            _buildStatColumn(
+                              'GPS Points',
+                              '${widget.trailData.points.length}',
+                              Icons.gps_fixed,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Privacy Toggle
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.spaceM),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isPrivate ? Icons.lock : Icons.public,
+                        color: typeHelper.color,
+                      ),
+                      const SizedBox(width: AppDimensions.spaceM),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Share Adventure',
+                              style: AppTextStyles.cardTitle,
+                            ),
+                            Text(
+                              _isPrivate 
+                                ? 'Keep this adventure private'
+                                : 'Share with friends on leaderboard',
+                              style: AppTextStyles.cardSubtitle,
                             ),
                           ],
                         ),
                       ),
+                      Switch(
+                        value: !_isPrivate,
+                        onChanged: (value) {
+                          setState(() {
+                            _isPrivate = !value;
+                          });
+                        },
+                        activeColor: typeHelper.color,
+                      ),
                     ],
                   ),
                 ),
-              ),
 
-              // Action Buttons
-              Padding(
-                padding: const EdgeInsets.all(AppDimensions.spaceL),
-                child: Column(
+                const SizedBox(height: AppDimensions.spaceXL),
+
+                // Action Buttons
+                Column(
                   children: [
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _saveAndComplete,
                         icon: const Icon(Icons.save),
-                        label: const Text('Save Adventure'),
+                        label: const Text('Save & Earn Badge'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.amethyst600,
+                          backgroundColor: typeHelper.color,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.all(AppDimensions.spaceL),
-                          textStyle: AppTextStyles.button,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppDimensions.spaceM,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spaceM),
                     SizedBox(
                       width: double.infinity,
-                      child: TextButton(
+                      child: OutlinedButton.icon(
                         onPressed: _discardTrip,
-                        child: Text(
-                          'Discard Trip',
-                          style: AppTextStyles.button.copyWith(
-                            color: AppColors.error,
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Discard Trip'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppDimensions.spaceM,
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _StatCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: AppColors.amethyst600,
-            size: AppDimensions.iconSizeM,
+  Widget _buildStatColumn(String label, String value, IconData icon) {
+    final typeHelper = TripTypeHelper.fromTrip(widget.trip);
+    
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: typeHelper.color,
+          size: 24,
+        ),
+        const SizedBox(height: AppDimensions.spaceS),
+        Text(
+          value,
+          style: AppTextStyles.cardTitle.copyWith(
+            color: typeHelper.color,
+            fontSize: 16,
           ),
-          const SizedBox(height: AppDimensions.spaceS),
-          Text(
-            value,
-            style: AppTextStyles.subtitle.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spaceXS),
-          Text(
-            title,
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecond,
-            ),
-          ),
-        ],
-      ),
+        ),
+        Text(
+          label,
+          style: AppTextStyles.caption,
+        ),
+      ],
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+    
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    } else {
+      return '${seconds}s';
+    }
   }
 }

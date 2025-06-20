@@ -53,14 +53,15 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       widget.trip.badgeEarned = true;
       await tripBox.put(widget.trip.id, widget.trip);
 
-      // Create badge using backward compatibility method
+      // Create badge using the actual constructor
       final badgeBox = Hive.box<model.Badge>('badges');
-      final badge = model.Badge.fromOldType(
+      final badge = model.Badge(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         tripId: widget.trip.id,
         label: '${widget.trip.type.toString().split('.').last.toUpperCase()} Explorer',
         earnedAt: DateTime.now(),
-        type: widget.trip.type,
+        oldType: widget.trip.type,  // Using oldType instead of type
+        coreType: widget.trip.currentType,  // Adding coreType if available
       );
       await badgeBox.put(badge.id, badge);
 
@@ -74,12 +75,14 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error completing trip: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error completing trip: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
