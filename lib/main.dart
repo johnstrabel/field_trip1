@@ -5,6 +5,7 @@ import 'screens/main_navigation_screen.dart';
 import 'screens/friends_management_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/discovery_map_screen.dart';
+import 'screens/badge_wall_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,6 +70,7 @@ class FieldTripApp extends StatelessWidget {
         '/friends': (context) => const FriendsManagementScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
         '/map-discover': (context) => const DiscoveryMapScreen(),
+        '/badges': (context) => const BadgeWallScreen(),
       },
     );
   }

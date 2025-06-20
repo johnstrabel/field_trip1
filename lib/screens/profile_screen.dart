@@ -1,4 +1,4 @@
-// lib/screens/profile_screen.dart - Complete version with navigation wiring
+// lib/screens/profile_screen.dart - Simple fix without type dependencies
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -457,8 +457,13 @@ class ProfileScreen extends StatelessWidget {
                   subtitle: const Text('Browse all your earned badges'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // Navigate to badge wall - using a simple approach since we can't guarantee DefaultTabController exists
-                    Navigator.of(context).pushNamed('/badges');
+                    // SIMPLE FIX: Just show a helpful message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Tap the Achievements tab at the bottom to view your badges!'),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
                   },
                 ),
                 const Divider(height: 1),
