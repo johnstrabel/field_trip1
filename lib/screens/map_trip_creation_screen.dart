@@ -70,7 +70,6 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
       final trip = model.Trip(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: _tripTitle,
-        oldType: _selectedTripType,  // Keep for backward compatibility
         waypoints: _waypoints,
         createdAt: DateTime.now(),
         completed: false,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/trip.dart' as model;
 import '../theme/app_theme.dart';
+import 'live_tracking_screen.dart';
 
 class TripDetailScreen extends StatefulWidget {
   final model.Trip trip;
@@ -22,25 +23,17 @@ class TripDetailScreen extends StatefulWidget {
 class _TripDetailScreenState extends State<TripDetailScreen> {
   bool _isTracking = false;
 
-  Future<void> _toggleTracking() async {
-    setState(() {
-      _isTracking = !_isTracking;
-    });
-
-    if (_isTracking) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🎯 Live tracking started for ${widget.trip.title}!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('📍 Tracking stopped'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
+  Future<void> _startLiveTracking() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LiveTrackingScreen(trip: widget.trip),
+      ),
+    );
+    
+    // Refresh the screen when returning from tracking
+    if (result != null && mounted) {
+      setState(() {});
     }
   }
 
@@ -53,22 +46,23 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
       widget.trip.badgeEarned = true;
       await tripBox.put(widget.trip.id, widget.trip);
 
-      // Create badge using the actual constructor
+      // Create badge using the new model structure
       final badgeBox = Hive.box<model.Badge>('badges');
+      final typeHelper = TripTypeHelper.fromTrip(widget.trip);
+      
       final badge = model.Badge(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         tripId: widget.trip.id,
-        label: '${widget.trip.type.toString().split('.').last.toUpperCase()} Explorer',
+        label: '${typeHelper.displayName} Explorer',
         earnedAt: DateTime.now(),
-        oldType: widget.trip.type,  // Using oldType instead of type
-        coreType: widget.trip.currentType,  // Adding coreType if available
+        coreType: widget.trip.currentType,  // Use the current type
       );
       await badgeBox.put(badge.id, badge);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 Trip completed! Badge earned!'),
+          SnackBar(
+            content: Text('🎉 ${typeHelper.displayName} trip completed! Badge earned!'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -88,7 +82,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final typeHelper = TripTypeHelper.fromType(widget.trip.type);
+    final typeHelper = TripTypeHelper.fromTrip(widget.trip);
     
     return Scaffold(
       appBar: AppBar(
@@ -198,6 +192,28 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                         ),
                       ],
                     ),
+                    
+                    // Sub-mode indicator (if not default)
+                    if (widget.trip.subMode != 'standard') ...[
+                      const SizedBox(height: AppDimensions.spaceS),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppDimensions.spaceM,
+                          vertical: AppDimensions.spaceXS,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+                        ),
+                        child: Text(
+                          'Mode: ${widget.trip.subMode}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -241,11 +257,11 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _toggleTracking,
-                      icon: Icon(_isTracking ? Icons.stop : Icons.play_arrow),
-                      label: Text(_isTracking ? 'Stop Live Tracking' : 'Start Live Tracking'),
+                      onPressed: _startLiveTracking,
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Start Live Tracking'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isTracking ? AppColors.error : typeHelper.color,
+                        backgroundColor: typeHelper.color,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           vertical: AppDimensions.spaceM,
@@ -300,6 +316,36 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           'Route Waypoints',
                           style: AppTextStyles.sectionTitle,
                         ),
+                        const Spacer(),
+                        if (widget.trip.isPathStrict)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDimensions.spaceS,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(AppDimensions.radiusS),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.lock,
+                                  size: 12,
+                                  color: AppColors.warning,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Strict Path',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.warning,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -463,4 +509,4 @@ class _StatTile extends StatelessWidget {
       ),
     );
   }
-}
+} // <- Add this closing brace here

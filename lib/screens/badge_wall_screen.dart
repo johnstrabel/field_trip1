@@ -17,15 +17,17 @@ class BadgeWallScreen extends StatefulWidget {
 
 class _BadgeWallScreenState extends State<BadgeWallScreen> {
   String _selectedFilter = 'All';
-  final List<String> _filterOptions = ['All', 'Standard', 'Challenge', 'Barcrawl', 'Fitness'];
+  
+  // Updated filter options using new taxonomy
+  final List<String> _filterOptions = TripTypeHelper.getCoreTypeDisplayNames();
 
-  /// Filter badges by trip type
+  /// Filter badges by core type
   List<model.Badge> _filterBadges(List<model.Badge> badges) {
     if (_selectedFilter == 'All') return badges;
     
     return badges.where((badge) {
-      return badge.type.toString().split('.').last.toLowerCase() == 
-             _selectedFilter.toLowerCase();
+      final typeHelper = TripTypeHelper.fromBadge(badge);
+      return typeHelper.displayName == _selectedFilter;
     }).toList();
   }
 
@@ -76,14 +78,14 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Filter by Trip Type',
+                    'Filter by Type',
                     style: AppTextStyles.sectionTitle,
                   ),
                   const SizedBox(height: AppDimensions.spaceM),
                   FilterChipRow(
-                    options: _filterOptions,
-                    selectedOption: _selectedFilter,
-                    onSelectionChanged: (selected) {
+                    items: _filterOptions,
+                    selected: _selectedFilter,
+                    onSelect: (selected) {
                       setState(() {
                         _selectedFilter = selected;
                       });
@@ -110,116 +112,105 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
   }
 
   Widget _buildHeaderSection(List<model.Badge> badges) {
-    final typeStats = <model.TripType, int>{};
+    // Calculate stats using CoreType
+    final Map<model.CoreType, int> typeStats = {};
     for (final badge in badges) {
-      typeStats[badge.type] = (typeStats[badge.type] ?? 0) + 1;
+      final coreType = badge.currentType;
+      typeStats[coreType] = (typeStats[coreType] ?? 0) + 1;
     }
 
     return Container(
-      margin: const EdgeInsets.all(AppDimensions.spaceL),
       padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.amethyst600, AppColors.amethyst100],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppDimensions.spaceM),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(AppDimensions.spaceM),
+          // Total badges count
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spaceXL,
+              vertical: AppDimensions.spaceL,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+              border: Border.all(color: AppColors.stroke),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '${badges.length}',
+                  style: AppTextStyles.heroTitle.copyWith(
+                    color: AppColors.amethyst600,
+                    fontSize: 36,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.emoji_events,
-                  color: Colors.white,
-                  size: AppDimensions.iconSizeL,
+                Text(
+                  badges.length == 1 ? 'Badge Earned' : 'Badges Earned',
+                  style: AppTextStyles.cardSubtitle,
                 ),
-              ),
-              const SizedBox(width: AppDimensions.spaceM),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Achievement Gallery',
-                      style: AppTextStyles.heroTitle.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppDimensions.spaceXS),
-                    Text(
-                      badges.isEmpty
-                          ? 'Start earning badges by completing trips!'
-                          : 'You\'ve earned ${badges.length} badge${badges.length == 1 ? '' : 's'}',
-                      style: AppTextStyles.heroSubtitle.copyWith(
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
           
+          // Type breakdown (if we have badges)
           if (badges.isNotEmpty) ...[
             const SizedBox(height: AppDimensions.spaceL),
-            
-            // Quick Stats Row
-            Row(
-              children: model.TripType.values.map((type) {
-                final typeName = type.toString().split('.').last;
-                final count = typeStats[type] ?? 0;
-                final color = TripTypeHelper.getColor(typeName);
-                
-                return Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppDimensions.spaceS),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(AppDimensions.spaceS),
-                        ),
-                        child: Icon(
-                          TripTypeHelper.getIcon(typeName),
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXS),
-                      Text(
-                        '$count',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        typeName.substring(0, 3).toUpperCase(),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+            Text(
+              'Badge Collection',
+              style: AppTextStyles.sectionTitle,
             ),
+            const SizedBox(height: AppDimensions.spaceM),
+            _buildTypeStatsRow(typeStats),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildTypeStatsRow(Map<model.CoreType, int> typeStats) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: model.CoreType.values.map((coreType) {
+        final helper = TripTypeHelper.fromCoreType(coreType);
+        final count = typeStats[coreType] ?? 0;
+        
+        return Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceXS),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spaceS,
+              vertical: AppDimensions.spaceM,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              border: Border.all(color: helper.color.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  helper.icon,
+                  color: helper.color,
+                  size: 20,
+                ),
+                const SizedBox(height: AppDimensions.spaceXS),
+                Text(
+                  '$count',
+                  style: AppTextStyles.cardTitle.copyWith(
+                    color: helper.color,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  helper.displayName,
+                  style: AppTextStyles.caption.copyWith(fontSize: 10),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -230,22 +221,14 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.amethyst100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.emoji_events_outlined,
-                size: 64,
-                color: AppColors.amethyst600,
-              ),
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 64,
+              color: AppColors.textSecond,
             ),
-            const SizedBox(height: AppDimensions.spaceXL),
+            const SizedBox(height: AppDimensions.spaceL),
             Text(
-              'No badges yet!',
+              'No Badges Yet',
               style: AppTextStyles.sectionTitle,
             ),
             const SizedBox(height: AppDimensions.spaceS),
@@ -257,15 +240,8 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
             const SizedBox(height: AppDimensions.spaceXL),
             ElevatedButton.icon(
               onPressed: () {
-                // Navigate to Explorer tab (index 2 in NEW navigation structure)
-                // Since we're in a bottom navigation context, we need to access the parent
                 final navigator = Navigator.of(context);
-                
-                // Pop back to main navigation and switch to Explorer tab
                 navigator.popUntil((route) => route.isFirst);
-                
-                // Since MainNavigationScreen uses StatefulWidget with _selectedIndex,
-                // we'll trigger a rebuild by using a callback or navigator replacement
                 navigator.pushReplacementNamed('/', arguments: {'initialIndex': 2});
               },
               icon: const Icon(Icons.explore),
@@ -357,10 +333,10 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
         ),
         content: const Text(
           'Badges are earned by completing trips! Each trip type has its own unique badge style:\n\n'
-          '🔵 Standard - Blue badges for regular exploration\n'
-          '🔴 Challenge - Red badges for difficult routes\n'
-          '🟠 Barcrawl - Bronze badges for social adventures\n'
-          '🟡 Fitness - Amber badges for active journeys\n\n'
+          '🔵 Explore - Blue badges for discovery adventures\n'
+          '🟠 Crawl - Bronze badges for social journeys\n'
+          '🟡 Active - Amber badges for fitness activities\n'
+          '🔴 Game - Crimson badges for competitive challenges\n\n'
           'Complete more trips to grow your collection!',
         ),
         actions: [
@@ -395,106 +371,66 @@ class _BadgeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeName = badge.type.toString().split('.').last;
-    final color = TripTypeHelper.getColor(typeName);
-    final icon = TripTypeHelper.getIcon(typeName);
+    final helper = TripTypeHelper.fromBadge(badge);
     
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: color, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Card(
+      elevation: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+          border: Border.all(
+            color: helper.color,
+            width: 2,
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spaceL),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Badge Icon with Glow Effect
-            Container(
-              padding: const EdgeInsets.all(AppDimensions.spaceL),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.3),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.spaceM),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Badge icon with colored background
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: helper.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+                ),
+                child: Icon(
+                  helper.icon,
+                  color: helper.color,
+                  size: 28,
+                ),
               ),
-              child: Icon(
-                Icons.emoji_events,
-                color: Colors.white,
-                size: AppDimensions.iconSizeL,
+              
+              const SizedBox(height: AppDimensions.spaceM),
+              
+              // Badge label
+              Text(
+                badge.label,
+                style: AppTextStyles.cardTitle.copyWith(fontSize: 14),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            
-            const SizedBox(height: AppDimensions.spaceM),
-            
-            // Badge Title
-            Text(
-              badge.label,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.cardTitle.copyWith(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+              
+              const SizedBox(height: AppDimensions.spaceS),
+              
+              // Type and date
+              Text(
+                helper.displayName,
+                style: AppTextStyles.caption.copyWith(
+                  color: helper.color,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            const SizedBox(height: AppDimensions.spaceS),
-            
-            // Trip Type Badge
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spaceS,
-                vertical: AppDimensions.spaceXS,
+              
+              Text(
+                _formatDate(badge.earnedAt),
+                style: AppTextStyles.caption,
               ),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusS),
-                border: Border.all(color: color.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    color: color,
-                    size: 12,
-                  ),
-                  const SizedBox(width: AppDimensions.spaceXS),
-                  Text(
-                    typeName.toUpperCase(),
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: AppDimensions.spaceS),
-            
-            // Earned Date
-            Text(
-              'Earned ${_formatDate(badge.earnedAt)}',
-              style: AppTextStyles.cardSubtitle.copyWith(fontSize: 10),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

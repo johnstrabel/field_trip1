@@ -4,57 +4,41 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class FilterChipRow extends StatelessWidget {
-  final List<String> options;
-  final String selectedOption;
-  final Function(String) onSelectionChanged;
+  final List<String> items;
+  final String selected;
+  final void Function(String) onSelect;
 
   const FilterChipRow({
     Key? key,
-    required this.options,
-    required this.selectedOption,
-    required this.onSelectionChanged,
+    required this.items,
+    required this.selected,
+    required this.onSelect,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: options.length,
-        separatorBuilder: (context, index) => const SizedBox(width: AppDimensions.spaceS),
-        itemBuilder: (context, index) {
-          final option = options[index];
-          final isSelected = option == selectedOption;
-          
-          return FilterChip(
-            label: Text(
-              option,
-              style: AppTextStyles.chipText.copyWith(
-                color: isSelected ? Colors.white : AppColors.textMain,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceM),
+      child: Row(
+        children: items.map((item) {
+          final isSelected = item == selected;
+          return Padding(
+            padding: const EdgeInsets.only(right: AppDimensions.spaceS),
+            child: ChoiceChip(
+              label: Text(
+                item,
+                style: isSelected
+                    ? AppTextStyles.chipText.copyWith(color: Colors.white)
+                    : AppTextStyles.chipText,
               ),
+              selected: isSelected,
+              backgroundColor: AppColors.amethyst100,
+              selectedColor: AppColors.amethyst600,
+              onSelected: (_) => onSelect(item),
             ),
-            selected: isSelected,
-            onSelected: (selected) {
-              if (selected) {
-                onSelectionChanged(option);
-              }
-            },
-            backgroundColor: AppColors.card,
-            selectedColor: AppColors.amethyst600,
-            side: BorderSide(
-              color: isSelected ? AppColors.amethyst600 : AppColors.stroke,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spaceM,
-              vertical: AppDimensions.spaceS,
-            ),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           );
-        },
+        }).toList(),
       ),
     );
   }

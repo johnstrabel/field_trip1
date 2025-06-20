@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/trip.dart' as model;
-import 'models/trail_data.dart';  // ADD THIS IMPORT
+import 'models/trail_data.dart';
 import 'utils/data_migration.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/friends_management_screen.dart';
@@ -36,7 +36,7 @@ Future<void> main() async {
     await Hive.openBox<model.Trip>('trips');
     await Hive.openBox<model.Badge>('badges');
     await Hive.openBox<model.ScoreCard>('scorecards');
-    await Hive.openBox<TrailData>('trails');  // ADD THIS LINE
+    await Hive.openBox<TrailData>('trails');
 
     // Perform data migration if needed
     await DataMigration.performMigrationIfNeeded();
@@ -51,7 +51,7 @@ Future<void> main() async {
       await Hive.deleteBoxFromDisk('trips');
       await Hive.deleteBoxFromDisk('badges');
       await Hive.deleteBoxFromDisk('scorecards');
-      await Hive.deleteBoxFromDisk('trails');  // ADD THIS LINE
+      await Hive.deleteBoxFromDisk('trails');
       await Hive.deleteBoxFromDisk('settings');
       
       // Re-initialize
@@ -62,15 +62,15 @@ Future<void> main() async {
       Hive.registerAdapter(model.BadgeAdapter());
       Hive.registerAdapter(model.CoreTypeAdapter());
       Hive.registerAdapter(model.ScoreCardAdapter());
-      Hive.registerAdapter(TrailPointAdapter());     // ADD
-      Hive.registerAdapter(TrailStatsAdapter());      // ADD
-      Hive.registerAdapter(TrailDataAdapter());       // ADD
+      Hive.registerAdapter(TrailPointAdapter());
+      Hive.registerAdapter(TrailStatsAdapter());
+      Hive.registerAdapter(TrailDataAdapter());
       
       // Open fresh boxes
       await Hive.openBox<model.Trip>('trips');
       await Hive.openBox<model.Badge>('badges');
       await Hive.openBox<model.ScoreCard>('scorecards');
-      await Hive.openBox<TrailData>('trails');  // ADD
+      await Hive.openBox<TrailData>('trails');
       
       // Create sample data for testing
       await DataMigration.createSampleDataNewSystem();

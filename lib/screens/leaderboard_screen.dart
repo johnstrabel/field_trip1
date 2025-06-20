@@ -321,7 +321,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppColors.amethyst100,
+                color:AppColors.amethyst600.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -348,161 +348,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildRankBadge(int rank) {
-    Color badgeColor;
-    Color textColor;
-    
-    switch (rank) {
-      case 1:
-        badgeColor = const Color(0xFFFFD700); // Gold
-        textColor = Colors.black;
-        break;
-      case 2:
-        badgeColor = const Color(0xFFC0C0C0); // Silver
-        textColor = Colors.black;
-        break;
-      case 3:
-        badgeColor = const Color(0xFFCD7F32); // Bronze
-        textColor = Colors.white;
-        break;
-      default:
-        badgeColor = AppColors.amethyst100;
-        textColor = AppColors.amethyst600;
-        break;
-    }
 
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: badgeColor,
-        shape: BoxShape.circle,
-        border: rank <= 3 ? Border.all(color: Colors.white, width: 2) : null,
-      ),
-      child: Center(
-        child: Text(
-          '$rank',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserInfo(LeaderboardEntry user, String subtitle, IconData icon) {
-    return Row(
-      children: [
-        // Avatar with online indicator (for non-current users)
-        Stack(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: user.isCurrentUser 
-                    ? AppColors.amethyst100 
-                    : AppColors.surface,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                user.avatar,
-                color: user.isCurrentUser 
-                    ? AppColors.amethyst600 
-                    : AppColors.textSecond,
-                size: 24,
-              ),
-            ),
-            if (!user.isCurrentUser)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        
-        const SizedBox(width: AppDimensions.spaceM),
-        
-        // User details
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                user.name,
-                style: AppTextStyles.cardTitle.copyWith(
-                  fontWeight: user.isCurrentUser ? FontWeight.bold : FontWeight.w600,
-                ),
-              ),
-              Text(
-                user.username,
-                style: AppTextStyles.cardSubtitle.copyWith(fontSize: 12),
-              ),
-              const SizedBox(height: AppDimensions.spaceXS),
-              Row(
-                children: [
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.cardTitle.copyWith(
-                      color: AppColors.amethyst600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(width: AppDimensions.spaceM),
-                  Icon(
-                    user.change > 0 
-                        ? Icons.trending_up 
-                        : user.change < 0 
-                            ? Icons.trending_down 
-                            : Icons.trending_flat,
-                    color: user.change > 0 
-                        ? AppColors.success 
-                        : user.change < 0 
-                            ? AppColors.error 
-                            : AppColors.textSecond,
-                    size: 16,
-                  ),
-                  const SizedBox(width: AppDimensions.spaceXS),
-                  Text(
-                    user.change == 0 
-                        ? 'No change' 
-                        : '${user.change > 0 ? '+' : ''}${user.change} from last period',
-                    style: TextStyle(
-                      color: user.change > 0 
-                          ? AppColors.success 
-                          : user.change < 0 
-                              ? AppColors.error 
-                              : AppColors.textSecond,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        
-        // Action button
-        Icon(
-          icon,
-          color: AppColors.amethyst600,
-          size: 32,
-        ),
-      ],
-    );
-  }
 
   // Helper method to convert LeaderboardEntry to FriendProfile for navigation
   FriendProfile _leaderboardEntryToProfile(LeaderboardEntry entry) {
@@ -560,7 +406,7 @@ class _LeaderboardCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppDimensions.spaceL),
         decoration: BoxDecoration(
           color: entry.isCurrentUser 
-              ? AppColors.amethyst100.withOpacity(0.3)
+              ? AppColors.amethyst600.withOpacity(0.3)
               : AppColors.card,
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
           border: entry.isCurrentUser 
@@ -602,7 +448,7 @@ class _LeaderboardCard extends StatelessWidget {
         textColor = Colors.white;
         break;
       default:
-        badgeColor = AppColors.amethyst100;
+        badgeColor = AppColors.amethyst600.withOpacity(0.1);
         textColor = AppColors.amethyst600;
         break;
     }
@@ -639,7 +485,7 @@ class _LeaderboardCard extends StatelessWidget {
               height: 50,
               decoration: BoxDecoration(
                 color: user.isCurrentUser 
-                    ? AppColors.amethyst100 
+                    ? AppColors.amethyst600.withOpacity(0.1)
                     : AppColors.surface,
                 shape: BoxShape.circle,
               ),

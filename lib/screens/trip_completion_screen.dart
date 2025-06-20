@@ -43,8 +43,7 @@ class _TripCompletionScreenState extends State<TripCompletionScreen> {
         tripId: widget.trip.id,
         label: '${typeHelper.displayName} Explorer',
         earnedAt: DateTime.now(),
-        oldType: widget.trip.oldType,  // May be null for new trips
-        coreType: widget.trip.currentType,  // Always use currentType
+        coreType: widget.trip.currentType,  // Use currentType, not both oldType and coreType
       );
       await badgeBox.put(badge.id, badge);
 
