@@ -4,17 +4,16 @@ import 'package:hive/hive.dart';
 
 part 'trip.g.dart';
 
-// NEW: CoreType enum replacing TripType
+// NEW: CoreType enum with 3 types (Explore, Crawl, Sport)
 @HiveType(typeId: 4)
 enum CoreType {
   @HiveField(0)
-  explore,   // Formerly 'standard'
+  explore,   // Traditional exploration and sightseeing
   @HiveField(1)
-  crawl,     // Formerly 'barcrawl'
+  crawl,     // Nightlife: bars, beer golf, subway surfers, barcrawl
   @HiveField(2)
-  active,    // Formerly 'fitness'
-  @HiveField(3)
-  game       // Formerly 'challenge'
+  sport      // All fitness, time trials, games (golf, frisbee golf), scorecards
+  // NOTE: Removed 'active' and 'game' - now combined into 'sport'
 }
 
 // KEEP OLD: TripType enum for migration purposes
@@ -80,7 +79,7 @@ class Trip {
   final CoreType coreType;
 
   @HiveField(8)
-  final String subMode; // e.g., 'beer_golf', 'time_trial', 'standard'
+  final String subMode; // e.g., 'beer_golf', 'time_trial', 'frisbee_golf'
 
   @HiveField(9)
   final String ruleSetId; // Links to RuleSet for scoring
@@ -117,7 +116,7 @@ class Trip {
   }) : oldType = type,
        coreType = _migrateTripTypeToCore(type);
 
-  // Migration helper - convert old TripType to new CoreType
+  // Migration helper - convert old TripType to new CoreType (UPDATED FOR 3 TYPES)
   static CoreType _migrateTripTypeToCore(TripType oldType) {
     switch (oldType) {
       case TripType.standard:
@@ -125,9 +124,8 @@ class Trip {
       case TripType.barcrawl:
         return CoreType.crawl;
       case TripType.fitness:
-        return CoreType.active;
-      case TripType.challenge:
-        return CoreType.game;
+      case TripType.challenge: // Both fitness and challenge become 'sport'
+        return CoreType.sport;
     }
   }
 
@@ -136,7 +134,7 @@ class Trip {
     return coreType;
   }
 
-  // COMPATIBILITY: Get old type for existing code
+  // COMPATIBILITY: Get old type for existing code (UPDATED FOR 3 TYPES)
   TripType get type {
     if (oldType != null) return oldType!;
     // Convert new CoreType back to old TripType for compatibility
@@ -145,10 +143,8 @@ class Trip {
         return TripType.standard;
       case CoreType.crawl:
         return TripType.barcrawl;
-      case CoreType.active:
-        return TripType.fitness;
-      case CoreType.game:
-        return TripType.challenge;
+      case CoreType.sport:
+        return TripType.fitness; // Default sport to fitness for compatibility
     }
   }
 }
@@ -200,7 +196,7 @@ class Badge {
     return CoreType.explore; // Default fallback
   }
 
-  // COMPATIBILITY: Get old type for existing code
+  // COMPATIBILITY: Get old type for existing code (UPDATED FOR 3 TYPES)
   TripType get type {
     if (oldType != null) return oldType!;
     // Convert new CoreType back to old TripType for compatibility
@@ -209,15 +205,13 @@ class Badge {
         return TripType.standard;
       case CoreType.crawl:
         return TripType.barcrawl;
-      case CoreType.active:
-        return TripType.fitness;
-      case CoreType.game:
-        return TripType.challenge;
+      case CoreType.sport:
+        return TripType.fitness; // Default sport to fitness for compatibility
     }
   }
 }
 
-// NEW: ScoreCard model for competitive modes
+// NEW: ScoreCard model for competitive modes (especially Sport type)
 @HiveType(typeId: 5)
 class ScoreCard {
   @HiveField(0)

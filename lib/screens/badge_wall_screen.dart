@@ -1,4 +1,4 @@
-// lib/screens/badge_wall_screen.dart
+// lib/screens/badge_wall_screen.dart - Updated for 3-Type System
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -18,8 +18,8 @@ class BadgeWallScreen extends StatefulWidget {
 class _BadgeWallScreenState extends State<BadgeWallScreen> {
   String _selectedFilter = 'All';
   
-  // Updated filter options using new taxonomy
-  final List<String> _filterOptions = TripTypeHelper.getCoreTypeDisplayNames();
+  // UPDATED: Filter options for new 3-type system
+  final List<String> _filterOptions = ['All', 'Explore', 'Crawl', 'Sport'];
 
   /// Filter badges by core type
   List<model.Badge> _filterBadges(List<model.Badge> badges) {
@@ -112,7 +112,7 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
   }
 
   Widget _buildHeaderSection(List<model.Badge> badges) {
-    // Calculate stats using CoreType
+    // UPDATED: Calculate stats using new 3-type CoreType system
     final Map<model.CoreType, int> typeStats = {};
     for (final badge in badges) {
       final coreType = badge.currentType;
@@ -242,7 +242,10 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
               onPressed: () {
                 final navigator = Navigator.of(context);
                 navigator.popUntil((route) => route.isFirst);
-                navigator.pushReplacementNamed('/', arguments: {'initialIndex': 2});
+                // Navigate to Explorer tab
+                if (navigator.canPop()) {
+                  navigator.pushReplacementNamed('/', arguments: {'initialIndex': 2});
+                }
               },
               icon: const Icon(Icons.explore),
               label: const Text('Start Exploring'),
@@ -334,9 +337,8 @@ class _BadgeWallScreenState extends State<BadgeWallScreen> {
         content: const Text(
           'Badges are earned by completing trips! Each trip type has its own unique badge style:\n\n'
           '🔵 Explore - Blue badges for discovery adventures\n'
-          '🟠 Crawl - Bronze badges for social journeys\n'
-          '🟡 Active - Amber badges for fitness activities\n'
-          '🔴 Game - Crimson badges for competitive challenges\n\n'
+          '🟠 Crawl - Bronze badges for nightlife journeys\n'
+          '🟡 Sport - Amber badges for fitness & competitive activities\n\n'
           'Complete more trips to grow your collection!',
         ),
         actions: [

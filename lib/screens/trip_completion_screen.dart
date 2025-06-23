@@ -1,4 +1,4 @@
-// lib/screens/trip_completion_screen.dart
+// lib/screens/trip_completion_screen.dart - Updated for 3-Type System
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -51,8 +51,8 @@ class _TripCompletionScreenState extends State<TripCompletionScreen> {
       final trailBox = await Hive.openBox<TrailData>('trails');
       await trailBox.put(widget.trip.id, widget.trailData);
 
-      // Create score card for competitive modes
-      if (widget.trip.currentType == model.CoreType.game && !_isPrivate) {
+      // UPDATED: Create score card for sport type (was game type)
+      if (widget.trip.currentType == model.CoreType.sport && !_isPrivate) {
         final scoreCardBox = Hive.box<model.ScoreCard>('scorecards');
         final scoreCard = model.ScoreCard(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -260,8 +260,8 @@ class _TripCompletionScreenState extends State<TripCompletionScreen> {
                         ],
                       ),
                       
-                      // Additional stats for competitive modes
-                      if (widget.trip.currentType == model.CoreType.game) ...[
+                      // Additional stats for sport type (was game type)
+                      if (widget.trip.currentType == model.CoreType.sport) ...[
                         const SizedBox(height: AppDimensions.spaceL),
                         const Divider(),
                         const SizedBox(height: AppDimensions.spaceL),

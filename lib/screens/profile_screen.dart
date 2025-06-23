@@ -1,4 +1,4 @@
-// lib/screens/profile_screen.dart - Simple fix without type dependencies
+// lib/screens/profile_screen.dart - Complete Updated Version with 3-Type System
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -39,7 +39,7 @@ class ProfileScreen extends StatelessWidget {
               return SingleChildScrollView(
                 child: Column(
                   children: [
-                    // Hero Profile Section
+                    // Hero Profile Section - FIXED TEXT COLORS
                     _buildHeroSection(context, trips, badges),
                     
                     const SizedBox(height: AppDimensions.spaceL),
@@ -49,12 +49,12 @@ class ProfileScreen extends StatelessWidget {
                     
                     const SizedBox(height: AppDimensions.spaceL),
                     
-                    // Trip Type Breakdown
+                    // Trip Type Breakdown - UPDATED FOR 3-TYPE SYSTEM
                     _buildTripTypeBreakdown(trips),
                     
                     const SizedBox(height: AppDimensions.spaceL),
                     
-                    // Social Section - UPDATED WITH NAVIGATION
+                    // Social Section
                     _buildSocialSection(context),
                     
                     const SizedBox(height: AppDimensions.spaceL),
@@ -134,7 +134,10 @@ class ProfileScreen extends StatelessWidget {
           // Name and Title
           Text(
             'Explorer',
-            style: AppTextStyles.heroTitle.copyWith(fontSize: 28),
+            style: AppTextStyles.heroTitle.copyWith(
+              fontSize: 28,
+              color: Colors.white, // FIXED: Explicitly white
+            ),
           ),
           const SizedBox(height: AppDimensions.spaceXS),
           Container(
@@ -143,7 +146,7 @@ class ProfileScreen extends StatelessWidget {
               vertical: AppDimensions.spaceXS,
             ),
             decoration: BoxDecoration(
-              color: AppColors.onlineBackground,
+              color: Colors.white.withOpacity(0.2), // FIXED: Better background
               borderRadius: BorderRadius.circular(AppDimensions.radiusM),
             ),
             child: Row(
@@ -160,8 +163,8 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(width: AppDimensions.spaceXS),
                 Text(
                   'Online & Exploring',
-                  style: TextStyle(
-                    color: AppColors.onlineGreen,
+                  style: const TextStyle(
+                    color: Colors.white, // FIXED: White text for better contrast
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -240,7 +243,7 @@ class ProfileScreen extends StatelessWidget {
                   title: 'Active Trips',
                   value: '${trips.length - completedTrips}',
                   subtitle: 'In progress',
-                  color: AppColors.info,
+                  color: AppColors.amethyst600,
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
@@ -260,6 +263,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // UPDATED: New 3-type system (Explore, Crawl, Sport)
   Widget _buildTripTypeBreakdown(List<model.Trip> trips) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceL),
@@ -284,64 +288,76 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceL),
-              ...model.TripType.values.map((type) {
-                final typeName = type.toString().split('.').last;
-                final count = trips.where((t) => t.type == type && t.completed).length;
-                final color = TripTypeHelper.getColor(typeName);
-                final icon = TripTypeHelper.getIcon(typeName);
-                
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppDimensions.spaceM),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppDimensions.spaceS),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppDimensions.spaceS),
-                        ),
-                        child: Icon(
-                          icon,
-                          color: color,
-                          size: 16,
-                        ),
-                      ),
-                      const SizedBox(width: AppDimensions.spaceM),
-                      Expanded(
-                        child: Text(
-                          typeName.toUpperCase(),
-                          style: AppTextStyles.cardSubtitle.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppDimensions.spaceM,
-                          vertical: AppDimensions.spaceXS,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                        ),
-                        child: Text(
-                          '$count',
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+              
+              // NEW: Show only 3 core types
+              _buildTypeRow(model.CoreType.explore, 'EXPLORE', _getTypeCount(trips, model.CoreType.explore)),
+              _buildTypeRow(model.CoreType.crawl, 'CRAWL', _getTypeCount(trips, model.CoreType.crawl)),
+              _buildTypeRow(model.CoreType.sport, 'SPORT', _getTypeCount(trips, model.CoreType.sport)),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // NEW: Helper to build each type row
+  Widget _buildTypeRow(model.CoreType coreType, String displayName, int count) {
+    final helper = TripTypeHelper.fromCoreType(coreType);
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimensions.spaceM),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppDimensions.spaceS),
+            decoration: BoxDecoration(
+              color: helper.color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppDimensions.spaceS),
+            ),
+            child: Icon(
+              helper.icon,
+              color: helper.color,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: AppDimensions.spaceM),
+          Expanded(
+            child: Text(
+              displayName,
+              style: AppTextStyles.cardSubtitle.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.spaceM,
+              vertical: AppDimensions.spaceXS,
+            ),
+            decoration: BoxDecoration(
+              color: helper.color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                color: helper.color,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NEW: Helper to count trips by CoreType (handles migration)
+  int _getTypeCount(List<model.Trip> trips, model.CoreType targetType) {
+    return trips.where((trip) {
+      // Use the currentType getter which handles migration
+      return trip.currentType == targetType && trip.completed;
+    }).length;
   }
 
   Widget _buildSocialSection(BuildContext context) {
@@ -421,7 +437,7 @@ class ProfileScreen extends StatelessWidget {
                   leading: Container(
                     padding: const EdgeInsets.all(AppDimensions.spaceS),
                     decoration: BoxDecoration(
-                      color: AppColors.amethyst100,
+                      color: AppColors.amethyst600.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(AppDimensions.spaceS),
                     ),
                     child: Icon(
@@ -457,7 +473,6 @@ class ProfileScreen extends StatelessWidget {
                   subtitle: const Text('Browse all your earned badges'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // SIMPLE FIX: Just show a helpful message
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Tap the Achievements tab at the bottom to view your badges!'),
@@ -521,12 +536,16 @@ class _HeroStat extends StatelessWidget {
           style: AppTextStyles.heroTitle.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: AppDimensions.spaceXS),
         Text(
           label,
-          style: AppTextStyles.heroSubtitle.copyWith(fontSize: 12),
+          style: AppTextStyles.cardSubtitle.copyWith(
+            fontSize: 12,
+            color: Colors.white.withOpacity(0.9),
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -586,7 +605,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: AppDimensions.spaceM),
             Text(
               value,
-              style: AppTextStyles.statValue.copyWith(
+              style: AppTextStyles.heroTitle.copyWith(
                 color: color,
                 fontSize: 24,
               ),
@@ -594,7 +613,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: AppDimensions.spaceXS),
             Text(
               subtitle,
-              style: AppTextStyles.statLabel.copyWith(fontSize: 11),
+              style: AppTextStyles.cardSubtitle.copyWith(fontSize: 11),
             ),
           ],
         ),

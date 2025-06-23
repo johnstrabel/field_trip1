@@ -1,4 +1,4 @@
-// lib/screens/explorer_screen.dart
+// lib/screens/explorer_screen.dart - Updated for 3-Type System
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -32,9 +32,9 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
 
   Future<void> _startLiveAdventure() async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Live Adventure mode coming soon! Use "Plan New Trip" for now.'),
-        backgroundColor: AppColors.gameCrimson,
+      SnackBar(
+        content: const Text('Live Adventure mode coming soon! Use "Plan New Trip" for now.'),
+        backgroundColor: AppColors.sportAmber, // Updated color
       ),
     );
   }
@@ -398,6 +398,33 @@ class _TripCard extends StatelessWidget {
                             '${trip.waypoints.length} waypoints',
                             style: AppTextStyles.caption,
                           ),
+                          // Show submode if not standard
+                          if (trip.subMode != 'standard') ...[
+                            const SizedBox(width: AppDimensions.spaceS),
+                            Text(
+                              '•',
+                              style: AppTextStyles.caption,
+                            ),
+                            const SizedBox(width: AppDimensions.spaceS),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppDimensions.spaceXS,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: typeHelper.color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                trip.subMode,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: typeHelper.color,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: AppDimensions.spaceXS),
@@ -449,6 +476,16 @@ class _TripCard extends StatelessWidget {
                         Icons.emoji_events,
                         color: typeHelper.color,
                         size: 16,
+                      ),
+                    ],
+                    
+                    // Show scorecard indicator for sport trips
+                    if (trip.currentType == model.CoreType.sport && trip.completed) ...[
+                      const SizedBox(height: AppDimensions.spaceXS),
+                      Icon(
+                        Icons.leaderboard,
+                        color: typeHelper.color,
+                        size: 14,
                       ),
                     ],
                   ],

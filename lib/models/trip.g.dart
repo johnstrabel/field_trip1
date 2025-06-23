@@ -229,9 +229,7 @@ class CoreTypeAdapter extends TypeAdapter<CoreType> {
       case 1:
         return CoreType.crawl;
       case 2:
-        return CoreType.active;
-      case 3:
-        return CoreType.game;
+        return CoreType.sport;
       default:
         return CoreType.explore;
     }
@@ -246,11 +244,8 @@ class CoreTypeAdapter extends TypeAdapter<CoreType> {
       case CoreType.crawl:
         writer.writeByte(1);
         break;
-      case CoreType.active:
+      case CoreType.sport:
         writer.writeByte(2);
-        break;
-      case CoreType.game:
-        writer.writeByte(3);
         break;
     }
   }

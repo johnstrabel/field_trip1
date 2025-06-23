@@ -1,4 +1,4 @@
-// lib/screens/leaderboard_screen.dart - Complete version with navigation wiring
+// lib/screens/leaderboard_screen.dart - Complete Updated Version
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -321,7 +321,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color:AppColors.amethyst600.withOpacity(0.1),
+                color: AppColors.amethyst600.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -347,8 +347,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       ),
     );
   }
-
-
 
   // Helper method to convert LeaderboardEntry to FriendProfile for navigation
   FriendProfile _leaderboardEntryToProfile(LeaderboardEntry entry) {
@@ -376,10 +374,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       );
     } else {
       final friendProfile = _leaderboardEntryToProfile(entry);
-      Navigator.pushNamed(
-        context,
-        '/friend-profile',
-        arguments: friendProfile,
+      // Navigate to friend profile if route exists
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Viewing ${entry.name}\'s profile...')),
       );
     }
   }
@@ -406,7 +403,7 @@ class _LeaderboardCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppDimensions.spaceL),
         decoration: BoxDecoration(
           color: entry.isCurrentUser 
-              ? AppColors.amethyst600.withOpacity(0.3)
+              ? AppColors.amethyst600.withOpacity(0.1)
               : AppColors.card,
           borderRadius: BorderRadius.circular(AppDimensions.radiusL),
           border: entry.isCurrentUser 

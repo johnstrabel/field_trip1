@@ -1,8 +1,9 @@
-// lib/screens/trip_creation_screen.dart
+// lib/screens/trip_creation_screen.dart - Updated for 3-Type System
 
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/trip.dart';
+import '../theme/app_theme.dart';
 
 class TripCreationScreen extends StatefulWidget {
   const TripCreationScreen({Key? key}) : super(key: key);
@@ -16,7 +17,24 @@ class _TripCreationScreenState extends State<TripCreationScreen> {
   final _nameController = TextEditingController();
   final List<Waypoint> _waypoints = [];
   
-  TripType _selectedType = TripType.standard;
+  // UPDATED: Use CoreType for new 3-type system, default to explore
+  CoreType _selectedCoreType = CoreType.explore;
+
+  // Helper map for display names and descriptions
+  final Map<CoreType, Map<String, String>> _typeInfo = {
+    CoreType.explore: {
+      'name': 'Explore',
+      'description': 'Traditional exploration and sightseeing adventures',
+    },
+    CoreType.crawl: {
+      'name': 'Crawl',
+      'description': 'Nightlife adventures: bars, beer golf, subway surfers',
+    },
+    CoreType.sport: {
+      'name': 'Sport',
+      'description': 'Fitness, time trials, golf, frisbee golf with scorecards',
+    },
+  };
 
   void _addWaypoint() {
     final name = _nameController.text.trim();
@@ -45,15 +63,28 @@ class _TripCreationScreenState extends State<TripCreationScreen> {
       return;
     }
 
+    // UPDATED: Use new Trip constructor with CoreType
     final trip = Trip(
       id: const Uuid().v4(),
       title: _titleController.text.trim(),
-      type: _selectedType,
       waypoints: _waypoints,
       createdAt: DateTime.now(),
+      coreType: _selectedCoreType,
+      subMode: _getSubModeForType(_selectedCoreType),
     );
 
     Navigator.pop(context, trip);
+  }
+
+  String _getSubModeForType(CoreType type) {
+    switch (type) {
+      case CoreType.explore:
+        return 'sightseeing';
+      case CoreType.crawl:
+        return 'social';
+      case CoreType.sport:
+        return 'fitness';
+    }
   }
 
   void _removeWaypoint(int index) {
@@ -119,27 +150,15 @@ class _TripCreationScreenState extends State<TripCreationScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Trip Type
-            DropdownButtonFormField<TripType>(
-              value: _selectedType,
-              decoration: const InputDecoration(
-                labelText: 'Trip Type',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (TripType? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedType = newValue;
-                  });
-                }
-              },
-              items: TripType.values.map((TripType type) {
-                return DropdownMenuItem<TripType>(
-                  value: type,
-                  child: Text(type.toString().split('.').last.toUpperCase()),
-                );
-              }).toList(),
+            // UPDATED: Trip Type Selection with new 3-type system
+            Text(
+              'Trip Type',
+              style: AppTextStyles.cardTitle,
             ),
+            const SizedBox(height: 8),
+            
+            ...CoreType.values.map((type) => _buildTypeCard(type)),
+            
             const SizedBox(height: 24),
 
             // Add Waypoint Section
@@ -177,7 +196,10 @@ class _TripCreationScreenState extends State<TripCreationScreen> {
                       child: Text(
                         'No waypoints added yet.\nAdd some locations to your trip!',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
                       ),
                     )
                   : ListView.builder(
@@ -187,10 +209,17 @@ class _TripCreationScreenState extends State<TripCreationScreen> {
                         return Card(
                           child: ListTile(
                             leading: CircleAvatar(
-                              child: Text('${index + 1}'),
+                              backgroundColor: TripTypeHelper.fromCoreType(_selectedCoreType).color,
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                             title: Text(waypoint.name),
-                            subtitle: Text('Default location (no GPS)'),
+                            subtitle: Text(
+                              'Default coordinates (Use Map Creator for GPS)',
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () => _removeWaypoint(index),
@@ -207,12 +236,79 @@ class _TripCreationScreenState extends State<TripCreationScreen> {
             ElevatedButton.icon(
               onPressed: _saveTrip,
               icon: const Icon(Icons.save),
-              label: const Text('Save Trip'),
+              label: Text('Save ${_typeInfo[_selectedCoreType]!['name']} Trip'),
               style: ElevatedButton.styleFrom(
+                backgroundColor: TripTypeHelper.fromCoreType(_selectedCoreType).color,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeCard(CoreType type) {
+    final info = _typeInfo[type]!;
+    final helper = TripTypeHelper.fromCoreType(type);
+    final isSelected = _selectedCoreType == type;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
+      child: InkWell(
+        onTap: () => setState(() => _selectedCoreType = type),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+        child: Container(
+          padding: const EdgeInsets.all(AppDimensions.spaceL),
+          decoration: BoxDecoration(
+            color: isSelected ? helper.color.withOpacity(0.1) : AppColors.card,
+            borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+            border: Border.all(
+              color: isSelected ? helper.color : AppColors.stroke,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppDimensions.spaceM),
+                decoration: BoxDecoration(
+                  color: helper.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppDimensions.spaceM),
+                ),
+                child: Icon(
+                  helper.icon,
+                  color: helper.color,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: AppDimensions.spaceM),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      info['name']!,
+                      style: AppTextStyles.cardTitle.copyWith(
+                        color: isSelected ? helper.color : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spaceXS),
+                    Text(
+                      info['description']!,
+                      style: AppTextStyles.cardSubtitle,
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  color: helper.color,
+                  size: 24,
+                ),
+            ],
+          ),
         ),
       ),
     );

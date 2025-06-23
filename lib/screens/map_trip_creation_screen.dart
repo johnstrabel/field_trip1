@@ -1,4 +1,4 @@
-// lib/screens/map_trip_creation_screen.dart
+// lib/screens/map_trip_creation_screen.dart - Updated for 3-Type System
 
 import 'package:flutter/material.dart';
 import '../models/trip.dart' as model;
@@ -17,26 +17,22 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
 
   // Trip configuration
   String _tripTitle = '';
-  model.TripType _selectedTripType = model.TripType.standard;
+  model.CoreType _selectedCoreType = model.CoreType.explore; // UPDATED: Use CoreType
   final List<model.Waypoint> _waypoints = [];
 
-  // Trip type descriptions
-  final Map<model.TripType, Map<String, String>> _tripTypeInfo = {
-    model.TripType.standard: {
-      'name': 'Standard',
-      'description': 'Casual exploration and sightseeing adventures',
+  // UPDATED: Trip type descriptions for 3-type system
+  final Map<model.CoreType, Map<String, String>> _tripTypeInfo = {
+    model.CoreType.explore: {
+      'name': 'Explore',
+      'description': 'Traditional exploration and sightseeing adventures',
     },
-    model.TripType.challenge: {
-      'name': 'Challenge',
-      'description': 'Difficult routes with competitive elements',
+    model.CoreType.crawl: {
+      'name': 'Crawl',
+      'description': 'Nightlife adventures: bars, beer golf, subway surfers',
     },
-    model.TripType.barcrawl: {
-      'name': 'Bar Crawl',
-      'description': 'Social bar and pub adventures',
-    },
-    model.TripType.fitness: {
-      'name': 'Fitness',
-      'description': 'Physical exercise routes with tracking',
+    model.CoreType.sport: {
+      'name': 'Sport',
+      'description': 'Fitness, time trials, golf, frisbee golf with scorecards',
     },
   };
 
@@ -71,6 +67,7 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
       return;
     }
 
+    // UPDATED: Create trip with new CoreType system
     final trip = model.Trip(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: _tripTitle,
@@ -78,45 +75,30 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
       createdAt: DateTime.now(),
       completed: false,
       badgeEarned: false,
-      coreType: _migrateTripTypeToCore(_selectedTripType),
-      subMode: _getSubModeForType(_selectedTripType),
+      coreType: _selectedCoreType,
+      subMode: _getSubModeForType(_selectedCoreType),
       ruleSetId: 'default',
       isPathStrict: false,
     );
     Navigator.of(context).pop(trip);
   }
 
-  model.CoreType _migrateTripTypeToCore(model.TripType old) {
-    switch (old) {
-      case model.TripType.standard:
-        return model.CoreType.explore;
-      case model.TripType.barcrawl:
-        return model.CoreType.crawl;
-      case model.TripType.fitness:
-        return model.CoreType.active;
-      case model.TripType.challenge:
-        return model.CoreType.game;
-    }
-  }
-
-  String _getSubModeForType(model.TripType type) {
+  String _getSubModeForType(model.CoreType type) {
     switch (type) {
-      case model.TripType.standard:
+      case model.CoreType.explore:
         return 'sightseeing';
-      case model.TripType.barcrawl:
+      case model.CoreType.crawl:
         return 'social';
-      case model.TripType.fitness:
-        return 'exercise';
-      case model.TripType.challenge:
-        return 'competitive';
+      case model.CoreType.sport:
+        return 'fitness';
     }
   }
 
   void _addSampleWaypoints() {
     setState(() {
       _waypoints.clear();
-      switch (_selectedTripType) {
-        case model.TripType.standard:
+      switch (_selectedCoreType) {
+        case model.CoreType.explore:
           _waypoints.addAll([
             model.Waypoint(
                 name: 'Central Park',
@@ -135,61 +117,42 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
                 longitude: -73.9934),
           ]);
           break;
-        case model.TripType.barcrawl:
+        case model.CoreType.crawl:
           _waypoints.addAll([
             model.Waypoint(
                 name: 'The Craft House',
-                note: 'Great IPAs',
+                note: 'Hole 1: Great IPAs',
                 latitude: 40.7505,
                 longitude: -73.9934),
             model.Waypoint(
                 name: 'Rooftop Lounge',
-                note: 'City views',
+                note: 'Hole 2: City views',
                 latitude: 40.7549,
                 longitude: -73.9840),
             model.Waypoint(
-                name: 'Local Pub',
-                note: 'Traditional atmosphere',
+                name: 'Underground Bar',
+                note: 'Final hole: Victory drink',
                 latitude: 40.7589,
                 longitude: -73.9851),
           ]);
           break;
-        case model.TripType.fitness:
+        case model.CoreType.sport:
           _waypoints.addAll([
             model.Waypoint(
-                name: 'Running Track Start',
-                note: 'Begin your fitness journey',
+                name: 'Tee 1',
+                note: 'Drive across the meadow',
                 latitude: 40.7851,
                 longitude: -73.9683),
             model.Waypoint(
-                name: 'Mile 1 Marker',
-                note: 'First checkpoint',
+                name: 'Basket 3',
+                note: 'Around the pond',
                 latitude: 40.7739,
                 longitude: -73.9713),
             model.Waypoint(
-                name: 'Finish Line',
-                note: 'Complete your workout',
+                name: 'Final Basket',
+                note: 'Championship hole',
                 latitude: 40.7794,
                 longitude: -73.9632),
-          ]);
-          break;
-        case model.TripType.challenge:
-          _waypoints.addAll([
-            model.Waypoint(
-                name: 'Challenge Start',
-                note: 'Begin the difficult route',
-                latitude: 40.7282,
-                longitude: -74.0776),
-            model.Waypoint(
-                name: 'Checkpoint 1',
-                note: 'Halfway point',
-                latitude: 40.7307,
-                longitude: -74.0723),
-            model.Waypoint(
-                name: 'Challenge End',
-                note: 'You made it!',
-                latitude: 40.7341,
-                longitude: -74.0675),
           ]);
           break;
       }
@@ -262,7 +225,7 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
                   child: ElevatedButton(
                     onPressed: _currentStep == 2 ? _createTrip : _nextStep,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.amethyst600,
+                      backgroundColor: TripTypeHelper.fromCoreType(_selectedCoreType).color,
                     ),
                     child: Text(_currentStep == 2 ? 'Create Trip' : 'Next'),
                   ),
@@ -275,7 +238,7 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
     );
   }
 
-  // STEP 1: scrollable
+  // STEP 1: Trip details and type selection
   Widget _buildStepOne() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
@@ -295,16 +258,20 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
           const SizedBox(height: AppDimensions.spaceXL),
           Text('Select Trip Type', style: AppTextStyles.sectionTitle),
           const SizedBox(height: AppDimensions.spaceM),
-          ...model.TripType.values.map((type) {
-            final selected = type == _selectedTripType;
-            final helper = TripTypeHelper.fromCoreType(_migrateTripTypeToCore(type));
+          
+          // UPDATED: Show only 3 core types
+          ...model.CoreType.values.map((type) {
+            final selected = type == _selectedCoreType;
+            final helper = TripTypeHelper.fromCoreType(type);
+            final info = _tripTypeInfo[type]!;
+            
             return Container(
               margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
               child: InkWell(
-                onTap: () => setState(() => _selectedTripType = type),
+                onTap: () => setState(() => _selectedCoreType = type),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusM),
                 child: Container(
-                  padding: const EdgeInsets.all(AppDimensions.spaceM),
+                  padding: const EdgeInsets.all(AppDimensions.spaceL),
                   decoration: BoxDecoration(
                     color: selected ? helper.color.withOpacity(0.1) : AppColors.card,
                     border: Border.all(
@@ -315,21 +282,43 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(helper.icon, color: helper.color, size: 24),
+                      Container(
+                        padding: const EdgeInsets.all(AppDimensions.spaceM),
+                        decoration: BoxDecoration(
+                          color: helper.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppDimensions.spaceM),
+                        ),
+                        child: Icon(
+                          helper.icon, 
+                          color: helper.color, 
+                          size: 24
+                        ),
+                      ),
                       const SizedBox(width: AppDimensions.spaceM),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_tripTypeInfo[type]!['name']!),
                             Text(
-                              _tripTypeInfo[type]!['description']!,
-                              style: TextStyle(color: AppColors.textSecond),
+                              info['name']!,
+                              style: AppTextStyles.cardTitle.copyWith(
+                                color: selected ? helper.color : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: AppDimensions.spaceXS),
+                            Text(
+                              info['description']!,
+                              style: AppTextStyles.cardSubtitle,
                             ),
                           ],
                         ),
                       ),
-                      if (selected) Icon(Icons.check_circle, color: helper.color),
+                      if (selected) 
+                        Icon(
+                          Icons.check_circle, 
+                          color: helper.color, 
+                          size: 24
+                        ),
                     ],
                   ),
                 ),
@@ -341,7 +330,7 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
     );
   }
 
-  // STEP 2: uses Expanded for list
+  // STEP 2: Waypoint management
   Widget _buildStepTwo() {
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
@@ -350,34 +339,73 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
         children: [
           Text('Add Waypoints', style: AppTextStyles.sectionTitle),
           const SizedBox(height: AppDimensions.spaceM),
+          
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _addSampleWaypoints,
               icon: const Icon(Icons.auto_fix_high),
-              label: const Text('Add Sample Waypoints'),
+              label: Text('Add Sample ${_tripTypeInfo[_selectedCoreType]!['name']} Waypoints'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: TripTypeHelper.fromCoreType(_selectedCoreType).color,
+                side: BorderSide(
+                  color: TripTypeHelper.fromCoreType(_selectedCoreType).color,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: AppDimensions.spaceL),
+          
           Expanded(
             child: _waypoints.isEmpty
-                ? Center(child: Text('No waypoints yet.', style: TextStyle(color: AppColors.textSecond)))
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_location_alt_outlined,
+                          size: 64,
+                          color: AppColors.textSecond,
+                        ),
+                        const SizedBox(height: AppDimensions.spaceM),
+                        Text(
+                          'No waypoints yet',
+                          style: AppTextStyles.cardTitle.copyWith(
+                            color: AppColors.textSecond,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.spaceS),
+                        Text(
+                          'Add sample waypoints or create custom ones',
+                          style: AppTextStyles.cardSubtitle,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
                 : ListView.builder(
                     itemCount: _waypoints.length,
                     itemBuilder: (_, i) {
                       final w = _waypoints[i];
-                      final helper = TripTypeHelper.fromCoreType(_migrateTripTypeToCore(_selectedTripType));
+                      final helper = TripTypeHelper.fromCoreType(_selectedCoreType);
                       return Card(
+                        margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: helper.color,
-                            child: Text('${i + 1}'),
+                            child: Text(
+                              '${i + 1}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           title: Text(w.name),
-                          subtitle: Text(w.note),
+                          subtitle: Text(w.note.isEmpty ? 'No notes' : w.note),
                           trailing: IconButton(
                             onPressed: () => setState(() => _waypoints.removeAt(i)),
-                            icon: const Icon(Icons.delete_outline),
+                            icon: const Icon(Icons.delete_outline, color: AppColors.error),
                           ),
                         ),
                       );
@@ -389,9 +417,11 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
     );
   }
 
-  // STEP 3: scrollable
+  // STEP 3: Review and create
   Widget _buildStepThree() {
-    final helper = TripTypeHelper.fromCoreType(_migrateTripTypeToCore(_selectedTripType));
+    final helper = TripTypeHelper.fromCoreType(_selectedCoreType);
+    final info = _tripTypeInfo[_selectedCoreType]!;
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
       child: Column(
@@ -399,32 +429,154 @@ class _MapTripCreationScreenState extends State<MapTripCreationScreen> {
         children: [
           Text('Review & Create', style: AppTextStyles.sectionTitle),
           const SizedBox(height: AppDimensions.spaceL),
+          
+          // Trip Summary Card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(AppDimensions.spaceL),
             decoration: BoxDecoration(
               color: helper.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+              border: Border.all(color: helper.color, width: 2),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_tripTitle.isEmpty ? 'Untitled Trip' : _tripTitle, style: AppTextStyles.cardTitle),
+                // Trip header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppDimensions.spaceS),
+                      decoration: BoxDecoration(
+                        color: helper.color,
+                        borderRadius: BorderRadius.circular(AppDimensions.spaceS),
+                      ),
+                      child: Icon(
+                        helper.icon,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spaceM),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _tripTitle.isEmpty ? 'Untitled Trip' : _tripTitle,
+                            style: AppTextStyles.cardTitle.copyWith(
+                              color: helper.color,
+                              fontSize: 18,
+                            ),
+                          ),
+                          Text(
+                            info['name']!,
+                            style: AppTextStyles.cardSubtitle.copyWith(
+                              color: helper.color,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: AppDimensions.spaceL),
+                
+                // Trip description
+                Text(
+                  info['description']!,
+                  style: AppTextStyles.cardSubtitle,
+                ),
+                
+                const SizedBox(height: AppDimensions.spaceL),
+                
+                // Waypoints preview
+                Text(
+                  'Waypoints (${_waypoints.length})',
+                  style: AppTextStyles.cardTitle.copyWith(fontSize: 16),
+                ),
                 const SizedBox(height: AppDimensions.spaceM),
-                // with this:
-..._waypoints
-    .asMap()
-    .entries
-    .map((entry) {
-      final i = entry.key;
-      final w = entry.value;
-      return Text('${i + 1}. ${w.name}');
-    })
-    .toList(),
+                
+                if (_waypoints.isEmpty)
+                  Text(
+                    'No waypoints added yet',
+                    style: AppTextStyles.cardSubtitle.copyWith(
+                      color: AppColors.error,
+                    ),
+                  )
+                else
+                  ..._waypoints.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final w = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppDimensions.spaceXS),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: helper.color,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${i + 1}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppDimensions.spaceM),
+                          Expanded(
+                            child: Text(
+                              w.name,
+                              style: AppTextStyles.cardSubtitle.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
               ],
             ),
           ),
+          
           const SizedBox(height: AppDimensions.spaceXL),
+          
+          // Additional info
+          Container(
+            padding: const EdgeInsets.all(AppDimensions.spaceL),
+            decoration: BoxDecoration(
+              color: AppColors.info.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: AppColors.info,
+                  size: 20,
+                ),
+                const SizedBox(width: AppDimensions.spaceM),
+                Expanded(
+                  child: Text(
+                    'Your trip will be saved and available in the Explorer tab. You can start tracking when you\'re ready to begin your adventure!',
+                    style: AppTextStyles.cardSubtitle.copyWith(
+                      color: AppColors.info,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

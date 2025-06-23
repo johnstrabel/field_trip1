@@ -1,8 +1,6 @@
-// lib/screens/dashboard_screen.dart - Complete version with navigation wiring
+// lib/screens/dashboard_screen.dart - Complete Updated Version
 
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../models/trip.dart' as model;
 import '../theme/app_theme.dart';
 import 'map_trip_creation_screen.dart';
 
@@ -53,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Discover'), // Changed from 'Dashboard' to 'Discover'
+        title: const Text('Discover'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -62,7 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.all(AppDimensions.spaceL),
         child: Column(
           children: [
-            // Hero Banner (updated to remove action buttons)
+            // Hero Banner - FIXED TEXT COLORS
             _buildHeroBanner(),
             
             const SizedBox(height: AppDimensions.spaceL),
@@ -162,6 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // FIXED: Hero banner with proper white text
   Widget _buildHeroBanner() {
     return Container(
       width: double.infinity,
@@ -194,20 +193,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppDimensions.spaceS),
+          // FIXED: Changed from heroSubtitle to explicit white text
           Text(
             'Explore nearby locations, track your journey, and compete with friends',
-            style: AppTextStyles.heroSubtitle.copyWith(fontSize: 16),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: Colors.white, // FIXED: was using AppTextStyles.heroSubtitle which had wrong color
+            ),
             textAlign: TextAlign.center,
           ),
           
           const SizedBox(height: AppDimensions.spaceM),
           
-          // Additional motivational text (replacing the buttons)
           Text(
             'Discover new places, track your adventures, and collect badges as you explore the world around you.',
-            style: AppTextStyles.heroSubtitle.copyWith(
+            style: const TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white70,
+              fontWeight: FontWeight.w300,
             ),
             textAlign: TextAlign.center,
           ),
@@ -303,7 +307,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       vertical: AppDimensions.spaceS,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.amethyst100,
+                      color: AppColors.amethyst600.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(AppDimensions.radiusM),
                     ),
                     child: Row(
@@ -375,7 +379,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.amethyst100,
+                    color: AppColors.amethyst600.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -467,7 +471,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         children: [
-          // Progress stats grid
+          // Progress stats grid - UPDATED FOR NEW COLORS
           Row(
             children: [
               Expanded(
@@ -476,7 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'Trips',
                   value: '${_progressData.tripsThisWeek}',
                   subtitle: 'this week',
-                  color: AppColors.amethyst600,
+                  color: AppColors.exploreBlue, // Updated color
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
@@ -486,7 +490,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'Distance',
                   value: '${_progressData.totalDistance}km',
                   subtitle: 'total',
-                  color: AppColors.info,
+                  color: AppColors.crawlBronze, // Updated color
                 ),
               ),
             ],
@@ -502,7 +506,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'Streak',
                   value: '${_progressData.currentStreak}',
                   subtitle: 'days',
-                  color: AppColors.challengeCrimson,
+                  color: AppColors.warning, // Keep warning color for streak
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
@@ -512,7 +516,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'Badges',
                   value: '${_progressData.badgesEarned}',
                   subtitle: 'earned',
-                  color: AppColors.success,
+                  color: AppColors.sportAmber, // Updated color
                 ),
               ),
             ],
@@ -589,9 +593,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'trip_completed':
         return AppColors.success;
       case 'badge_earned':
-        return AppColors.challengeCrimson;
+        return AppColors.sportAmber; // Updated for new system
       case 'challenge_started':
-        return AppColors.info;
+        return AppColors.amethyst600;
       default:
         return AppColors.textSecond;
     }
@@ -675,7 +679,7 @@ class _QuickActionTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppDimensions.spaceM),
               decoration: BoxDecoration(
-                color: AppColors.amethyst100,
+                color: AppColors.amethyst600.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppDimensions.spaceM),
               ),
               child: Icon(
