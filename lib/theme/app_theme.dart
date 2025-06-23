@@ -6,7 +6,7 @@ import '../models/trip.dart' as model;
 class AppColors {
   // Brand Colors
   static const Color amethyst600 = Color(0xFF7C3AED);
-  static const Color amethyst100 = Color(0xFFF5F3FF);  // Added missing shade
+  static const Color amethyst100 = Color(0xFFF5F3FF);
 
   static const Color surface = Color(0xFFF8FAFC);
   static const Color card = Color(0xFFFFFFFF);
@@ -17,19 +17,20 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
 
-  // NEW: Core Type Badge Colors (replacing old system)
-  static const Color exploreBlue = Color(0xFF1EA7FF);
-  static const Color crawlBronze = Color(0xFFC38121);
-  static const Color activeAmber = Color(0xFFF4B400);
-  static const Color gameCrimson = Color(0xFFD7263D);
+  // NEW: 3-Type System Colors
+  static const Color exploreBlue = Color(0xFF1EA7FF);    // Explore - Traditional sightseeing
+  static const Color crawlCrimson = Color(0xFFD7263D);   // Crawl - Nightlife adventures (changed to crimson)
+  static const Color sportAmber = Color(0xFFF4B400);     // Sport - Fitness, games, competitions
 
   // OLD: Keep for backward compatibility during migration
   static const Color standardBlue = Color(0xFF1EA7FF);
-  static const Color barcrawlBronze = Color(0xFFC38121);
+  static const Color barcrawlBronze = Color(0xFFD7263D);  // Updated to match crawlCrimson
   static const Color fitnessAmber = Color(0xFFF4B400);
   static const Color challengeCrimson = Color(0xFFD7263D);
+  static const Color activeAmber = Color(0xFFF4B400);    // Maps to sport
+  static const Color gameCrimson = Color(0xFFD7263D);    // Maps to sport
 
-  // ADDED: Missing colors for profile and other screens
+  // Profile and UI colors
   static const Color onlineGreen = Color(0xFF10B981);
   static const Color onlineBackground = Color(0xFFECFDF5);
   static const Color info = Color(0xFF3B82F6);
@@ -51,10 +52,7 @@ class AppDimensions {
   static const double buttonHeightM = 48.0;
   static const double buttonHeightL = 56.0;
 
-  // ADDED: Missing dimension for profile avatar
   static const double avatarSize = 64.0;
-
-  // ADDED: Icon sizes
   static const double iconSizeM = 24.0;
   static const double iconSizeL = 32.0;
 }
@@ -66,7 +64,7 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
   
-  static const TextStyle heroSubtitle = TextStyle(  // Added missing
+  static const TextStyle heroSubtitle = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
@@ -102,24 +100,23 @@ class AppTextStyles {
     color: AppColors.textSecond,
   );
 
-  // ADDED: for stats and filter chips
   static const TextStyle statValue = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
   );
+  
   static const TextStyle statLabel = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecond,
   );
 
-  static const TextStyle textMain = body;   // general text
-  static const TextStyle chipText = caption; // for filter chips
+  static const TextStyle textMain = body;
+  static const TextStyle chipText = caption;
 }
 
 class AppTheme {
-  // MAIN THEME GETTER - This is what main.dart expects
   static ThemeData get theme {
     return ThemeData(
       primarySwatch: _createMaterialColor(AppColors.amethyst600),
@@ -127,7 +124,6 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.surface,
       cardColor: AppColors.card,
       
-      // Updated text theme
       textTheme: const TextTheme(
         headlineLarge: AppTextStyles.heroTitle,
         headlineMedium: AppTextStyles.sectionTitle,
@@ -137,7 +133,6 @@ class AppTheme {
         bodySmall: AppTextStyles.caption,
       ),
       
-      // App bar theme
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.card,
         foregroundColor: AppColors.textPrimary,
@@ -146,7 +141,6 @@ class AppTheme {
         titleTextStyle: AppTextStyles.sectionTitle,
       ),
       
-      // Card theme
       cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 2,
@@ -156,7 +150,6 @@ class AppTheme {
         shadowColor: Colors.black.withOpacity(0.1),
       ),
       
-      // Elevated button theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.amethyst600,
@@ -170,7 +163,6 @@ class AppTheme {
         ),
       ),
       
-      // Outlined button theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.amethyst600,
@@ -183,7 +175,6 @@ class AppTheme {
         ),
       ),
       
-      // Text button theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.amethyst600,
@@ -191,7 +182,6 @@ class AppTheme {
         ),
       ),
       
-      // Bottom navigation bar theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.card,
         selectedItemColor: AppColors.amethyst600,
@@ -202,7 +192,6 @@ class AppTheme {
         unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
       ),
       
-      // Input decoration theme
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -210,7 +199,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          borderSide: const BorderSide(color:	AppColors.stroke),
+          borderSide: const BorderSide(color: AppColors.stroke),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
@@ -226,28 +215,39 @@ class AppTheme {
         ),
         filled: true,
         fillColor: AppColors.card,
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceM, vertical: AppDimensions.spaceM),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.spaceM, 
+          vertical: AppDimensions.spaceM
+        ),
       ),
       
-      // Chip theme
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surface,
         selectedColor: AppColors.amethyst600,
         disabledColor: AppColors.stroke,
         labelStyle: AppTextStyles.chipText,
         secondaryLabelStyle: AppTextStyles.chipText.copyWith(color: Colors.white),
-        padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceM, vertical: AppDimensions.spaceS),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusM)),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.spaceM, 
+          vertical: AppDimensions.spaceS
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusM)
+        ),
       ),
       
-      // Divider theme
-      dividerTheme: const DividerThemeData(color: AppColors.stroke, thickness: 1, space: 1),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.stroke, 
+        thickness: 1, 
+        space: 1
+      ),
       
-      // Snackbar theme
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,
         contentTextStyle: AppTextStyles.body.copyWith(color: Colors.white),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppDimensions.radiusM)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusM)
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -272,27 +272,43 @@ class AppTheme {
   }
 }
 
-// UPDATED: TripTypeHelper class with support for both old and new systems
+// UPDATED: TripTypeHelper for 3-type system (Explore, Crawl, Sport)
 class TripTypeHelper {
   final String displayName;
   final Color color;
   final IconData icon;
 
-  const TripTypeHelper({required this.displayName, required this.color, required this.icon});
+  const TripTypeHelper({
+    required this.displayName, 
+    required this.color, 
+    required this.icon
+  });
 
+  // NEW: Updated for 3-type system - ONLY these 3 types exist in CoreType enum
   static TripTypeHelper fromCoreType(model.CoreType coreType) {
     switch (coreType) {
       case model.CoreType.explore:
-        return const TripTypeHelper(displayName: 'Explore', color:	AppColors.exploreBlue, icon: Icons.explore);
+        return const TripTypeHelper(
+          displayName: 'Explore', 
+          color: AppColors.exploreBlue, 
+          icon: Icons.explore
+        );
       case model.CoreType.crawl:
-        return const TripTypeHelper(displayName: 'Crawl', color: AppColors.crawlBronze, icon: Icons.local_bar);
-      case model.CoreType.active:
-        return const TripTypeHelper(displayName: 'Active', color: AppColors.activeAmber, icon: Icons.fitness_center);
-      case model.CoreType.game:
-        return const TripTypeHelper(displayName: 'Game', color: AppColors.gameCrimson, icon: Icons.games);
+        return const TripTypeHelper(
+          displayName: 'Crawl', 
+          color: AppColors.crawlCrimson, 
+          icon: Icons.local_bar
+        );
+      case model.CoreType.sport:
+        return const TripTypeHelper(
+          displayName: 'Sport', 
+          color: AppColors.sportAmber, 
+          icon: Icons.sports
+        );
     }
   }
 
+  // Migration support for old types
   static TripTypeHelper fromTripType(model.TripType tripType) {
     switch (tripType) {
       case model.TripType.standard:
@@ -300,9 +316,8 @@ class TripTypeHelper {
       case model.TripType.barcrawl:
         return fromCoreType(model.CoreType.crawl);
       case model.TripType.fitness:
-        return fromCoreType(model.CoreType.active);
-      case model.TripType.challenge:
-        return fromCoreType(model.CoreType.game);
+      case model.TripType.challenge: // Both map to sport
+        return fromCoreType(model.CoreType.sport);
     }
   }
 
@@ -314,6 +329,7 @@ class TripTypeHelper {
     return fromCoreType(badge.currentType);
   }
 
+  // Helper for dynamic type resolution - FIXED to map old types to new 3-type system
   static TripTypeHelper fromType(dynamic type) {
     final String typeString;
     if (type is model.TripType) typeString = type.toString().split('.').last;
@@ -322,21 +338,43 @@ class TripTypeHelper {
 
     switch (typeString.toLowerCase()) {
       case 'standard':
-      case 'explore': return fromCoreType(model.CoreType.explore);
+      case 'explore': 
+        return fromCoreType(model.CoreType.explore);
       case 'barcrawl':
-      case 'crawl':   return fromCoreType(model.CoreType.crawl);
+      case 'crawl':   
+        return fromCoreType(model.CoreType.crawl);
       case 'fitness':
-      case 'active':  return fromCoreType(model.CoreType.active);
       case 'challenge':
-      case 'game':    return fromCoreType(model.CoreType.game);
-      default:        return fromCoreType(model.CoreType.explore);
+      case 'active':    // OLD: Map to sport
+      case 'game':      // OLD: Map to sport
+      case 'sport':     // NEW: Direct mapping
+        return fromCoreType(model.CoreType.sport);
+      default:        
+        return fromCoreType(model.CoreType.explore);
     }
   }
 
+  // Utility methods
   static Color getColor(String tripType) => fromType(tripType).color;
   static IconData getIcon(String tripType) => fromType(tripType).icon;
 
+  // NEW: 3-type system helpers
   static List<model.CoreType> getAllCoreTypes() => model.CoreType.values;
-  static List<String> getCoreTypeDisplayNames() => ['All', 'Explore', 'Crawl', 'Active', 'Game'];
-  static Color getCoreTypeColorWithOpacity(model.CoreType coreType, double o) => fromCoreType(coreType).color.withOpacity(o);
+  static List<String> getCoreTypeDisplayNames() => ['All', 'Explore', 'Crawl', 'Sport'];
+  
+  static Color getCoreTypeColorWithOpacity(model.CoreType coreType, double opacity) => 
+      fromCoreType(coreType).color.withOpacity(opacity);
+
+  // Migration helper
+  static model.CoreType migrateTripTypeToCore(model.TripType oldType) {
+    switch (oldType) {
+      case model.TripType.standard:
+        return model.CoreType.explore;
+      case model.TripType.barcrawl:
+        return model.CoreType.crawl;
+      case model.TripType.fitness:
+      case model.TripType.challenge:
+        return model.CoreType.sport;
+    }
+  }
 }

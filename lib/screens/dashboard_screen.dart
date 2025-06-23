@@ -490,7 +490,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title: 'Distance',
                   value: '${_progressData.totalDistance}km',
                   subtitle: 'total',
-                  color: AppColors.crawlBronze, // Updated color
+                  color: AppColors.crawlCrimson, // Updated color
                 ),
               ),
             ],
