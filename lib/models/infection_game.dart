@@ -1,5 +1,6 @@
-// lib/models/infection_game.dart
+// lib/models/infection_game.dart - FIXED VERSION
 import 'package:hive/hive.dart';
+import 'dart:math' as math; // ADDED: Missing import
 
 part 'infection_game.g.dart';
 
@@ -235,6 +236,20 @@ class LatLng {
   final double longitude;
 
   LatLng(this.latitude, this.longitude);
+  
+  @override
+  String toString() => 'LatLng($latitude, $longitude)';
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is LatLng &&
+           other.latitude == latitude &&
+           other.longitude == longitude;
+  }
+  
+  @override
+  int get hashCode => latitude.hashCode ^ longitude.hashCode;
 }
 
 @HiveType(typeId: 21)
@@ -334,5 +349,112 @@ class GameSession {
       case InfectionMode.crawl:
         return viewer.role == PlayerRole.infected; // Same as FFA for now
     }
+  }
+}
+
+// =================== SHARED SCORECARD MODEL (MISSING) ===================
+
+@HiveType(typeId: 12)
+class ScoreEntry {
+  @HiveField(0)
+  final String playerId;
+  
+  @HiveField(1)
+  final String playerName;
+  
+  @HiveField(2)
+  final Map<String, dynamic> scores; // Waypoint ID -> score
+  
+  @HiveField(3)
+  final DateTime lastUpdated;
+  
+  @HiveField(4)
+  final int totalScore;
+
+  ScoreEntry({
+    required this.playerId,
+    required this.playerName,
+    required this.scores,
+    required this.lastUpdated,
+    required this.totalScore,
+  });
+  
+  ScoreEntry copyWith({
+    String? playerId,
+    String? playerName,
+    Map<String, dynamic>? scores,
+    DateTime? lastUpdated,
+    int? totalScore,
+  }) {
+    return ScoreEntry(
+      playerId: playerId ?? this.playerId,
+      playerName: playerName ?? this.playerName,
+      scores: scores ?? this.scores,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+      totalScore: totalScore ?? this.totalScore,
+    );
+  }
+}
+
+@HiveType(typeId: 13)
+class SharedScoreCard {
+  @HiveField(0)
+  final String id;
+  
+  @HiveField(1)
+  final String groupTripId;
+  
+  @HiveField(2)
+  final List<ScoreEntry> entries;
+  
+  @HiveField(3)
+  final DateTime createdAt;
+  
+  @HiveField(4)
+  final DateTime lastUpdated;
+  
+  @HiveField(5)
+  final bool isActive;
+  
+  @HiveField(6)
+  final Map<String, dynamic> gameRules; // Scoring rules and configuration
+
+  SharedScoreCard({
+    required this.id,
+    required this.groupTripId,
+    required this.entries,
+    required this.createdAt,
+    required this.lastUpdated,
+    this.isActive = true,
+    this.gameRules = const {},
+  });
+
+  // Helper methods
+  ScoreEntry? getPlayerEntry(String playerId) {
+    try {
+      return entries.firstWhere((entry) => entry.playerId == playerId);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  List<ScoreEntry> get leaderboard {
+    final sorted = List<ScoreEntry>.from(entries);
+    sorted.sort((a, b) => b.totalScore.compareTo(a.totalScore));
+    return sorted;
+  }
+  
+  int get totalPlayers => entries.length;
+  
+  ScoreEntry? get winner => leaderboard.isNotEmpty ? leaderboard.first : null;
+  
+  Map<String, int> getWaypointScores(String waypointId) {
+    final Map<String, int> scores = {};
+    for (final entry in entries) {
+      if (entry.scores.containsKey(waypointId)) {
+        scores[entry.playerId] = entry.scores[waypointId] as int;
+      }
+    }
+    return scores;
   }
 }

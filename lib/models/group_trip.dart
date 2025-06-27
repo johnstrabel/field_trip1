@@ -1,4 +1,5 @@
-// lib/models/group_trip.dart
+// lib/models/group_trip.dart - FIXED VERSION
+
 import 'package:hive/hive.dart';
 import 'trip.dart';
 
@@ -52,11 +53,11 @@ class GroupTrip extends Trip {
   final DateTime? startedAt;
 
   GroupTrip({
-    required String id,
-    required String title,
-    required List<Waypoint> waypoints,
-    required DateTime createdAt,
-    required CoreType coreType,
+    required super.id,           // FIXED: Use super parameters
+    required super.title,        // FIXED: Use super parameters
+    required super.waypoints,    // FIXED: Use super parameters
+    required super.createdAt,    // FIXED: Use super parameters
+    required super.coreType,     // FIXED: Use super parameters
     required this.participantIds,
     required this.creatorId,
     required this.status,
@@ -64,19 +65,10 @@ class GroupTrip extends Trip {
     this.sharedScorecardId,
     this.invitedAt,
     this.startedAt,
-    String? subMode,
-    bool completed = false,
-    bool badgeEarned = false,
-  }) : super(
-    id: id,
-    title: title,
-    waypoints: waypoints,
-    createdAt: createdAt,
-    coreType: coreType,
-    subMode: subMode,
-    completed: completed,
-    badgeEarned: badgeEarned,
-  );
+    super.subMode,               // FIXED: Use super parameters
+    super.completed = false,     // FIXED: Use super parameters
+    super.badgeEarned = false,   // FIXED: Use super parameters
+  });
 
   // Helper methods
   bool isUserParticipant(String userId) => participantIds.contains(userId);
@@ -88,4 +80,51 @@ class GroupTrip extends Trip {
       .where((entry) => entry.value == UserRole.invited)
       .map((entry) => entry.key)
       .toList();
+      
+  List<String> get activeParticipants => userRoles.entries
+      .where((entry) => entry.value == UserRole.participant)
+      .map((entry) => entry.key)
+      .toList();
+      
+  bool get canStart => activeParticipants.length >= 2 && status == GroupTripStatus.planned;
+  
+  bool get isActive => status == GroupTripStatus.active;
+  bool get isCompleted => status == GroupTripStatus.completed;
+  
+  // Create a copy with updated status
+  GroupTrip copyWith({
+    String? id,
+    String? title,
+    List<Waypoint>? waypoints,
+    DateTime? createdAt,
+    CoreType? coreType,
+    List<String>? participantIds,
+    String? creatorId,
+    GroupTripStatus? status,
+    Map<String, UserRole>? userRoles,
+    String? sharedScorecardId,
+    DateTime? invitedAt,
+    DateTime? startedAt,
+    String? subMode,
+    bool? completed,
+    bool? badgeEarned,
+  }) {
+    return GroupTrip(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      waypoints: waypoints ?? this.waypoints,
+      createdAt: createdAt ?? this.createdAt,
+      coreType: coreType ?? this.coreType,
+      participantIds: participantIds ?? this.participantIds,
+      creatorId: creatorId ?? this.creatorId,
+      status: status ?? this.status,
+      userRoles: userRoles ?? this.userRoles,
+      sharedScorecardId: sharedScorecardId ?? this.sharedScorecardId,
+      invitedAt: invitedAt ?? this.invitedAt,
+      startedAt: startedAt ?? this.startedAt,
+      subMode: subMode ?? this.subMode,
+      completed: completed ?? this.completed,
+      badgeEarned: badgeEarned ?? this.badgeEarned,
+    );
+  }
 }

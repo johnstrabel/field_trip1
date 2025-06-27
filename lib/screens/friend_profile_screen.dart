@@ -1,30 +1,106 @@
-// lib/screens/friend_profile_screen.dart
+// lib/screens/friend_profile_screen.dart - FIXED TO ACCEPT STRING ID
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class FriendProfileScreen extends StatefulWidget {
-  final FriendProfile friend;
+  final String friendId; // CHANGED: Now accepts String instead of FriendProfile object
 
   const FriendProfileScreen({
-    Key? key,
-    required this.friend,
-  }) : super(key: key);
+    super.key, // FIXED: Use super.key
+    required this.friendId, // CHANGED: Parameter name to match main.dart
+  });
 
   @override
-  _FriendProfileScreenState createState() => _FriendProfileScreenState();
+  State<FriendProfileScreen> createState() => _FriendProfileScreenState(); // FIXED: Remove underscore
 }
 
 class _FriendProfileScreenState extends State<FriendProfileScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  late FriendProfile _friend; // Create friend object from ID
   bool _isFollowing = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _isFollowing = widget.friend.isFollowing;
+    _friend = _createMockFriendFromId(widget.friendId); // Create mock friend
+    _isFollowing = _friend.isFollowing;
+  }
+
+  // ADDED: Create mock friend from ID for development
+  FriendProfile _createMockFriendFromId(String friendId) {
+    return FriendProfile(
+      id: friendId,
+      name: 'Friend $friendId',
+      username: '@friend$friendId',
+      avatar: Icons.person,
+      isOnline: friendId.hashCode % 2 == 0, // Mock online status
+      lastSeen: DateTime.now().subtract(Duration(hours: friendId.length)),
+      isFollowing: false,
+      totalTrips: 15 + friendId.length,
+      badges: 8 + friendId.length,
+      currentStreak: 5,
+      bestStreak: 12,
+      mutualFriends: 3,
+      totalDistance: 45.2 + friendId.length,
+      totalHours: 28 + friendId.length,
+      favoriteType: 'crawl',
+      tripTypeStats: {
+        'explore': 8,
+        'crawl': 12,
+        'sport': 5,
+      },
+      recentActivity: [
+        ActivityItem(
+          description: 'Completed Downtown Adventure',
+          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          icon: Icons.check_circle,
+          color: AppColors.success,
+        ),
+        ActivityItem(
+          description: 'Earned Explorer Badge',
+          timestamp: DateTime.now().subtract(const Duration(days: 1)),
+          icon: Icons.emoji_events,
+          color: AppColors.warning,
+        ),
+      ],
+      recentTrips: [
+        FriendTrip(
+          id: '1',
+          title: 'City Center Crawl',
+          type: 'crawl',
+          distance: '3.2 km',
+          duration: '2h 15m',
+          completedAt: DateTime.now().subtract(const Duration(days: 1)),
+          isShared: true,
+        ),
+        FriendTrip(
+          id: '2',
+          title: 'Park Explorer',
+          type: 'explore',
+          distance: '5.1 km',
+          duration: '1h 45m',
+          completedAt: DateTime.now().subtract(const Duration(days: 3)),
+          isShared: false,
+        ),
+      ],
+      earnedBadges: [
+        FriendBadge(
+          id: '1',
+          title: 'Explorer',
+          type: 'explore',
+          earnedAt: DateTime.now().subtract(const Duration(days: 5)),
+        ),
+        FriendBadge(
+          id: '2',
+          title: 'Night Owl',
+          type: 'crawl',
+          earnedAt: DateTime.now().subtract(const Duration(days: 10)),
+        ),
+      ],
+    );
   }
 
   @override
@@ -90,7 +166,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                 controller: _tabController,
                 indicatorColor: Colors.white,
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.white.withOpacity(0.7),
+                unselectedLabelColor: Colors.white.withValues(alpha: 0.7), // FIXED: deprecated withOpacity
                 tabs: const [
                   Tab(text: 'Stats', icon: Icon(Icons.bar_chart, size: 20)),
                   Tab(text: 'Trips', icon: Icon(Icons.map, size: 20)),
@@ -118,7 +194,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
         gradient: LinearGradient(
           colors: [
             AppColors.amethyst600,
-            AppColors.amethyst600.withOpacity(0.8),
+            AppColors.amethyst600.withValues(alpha: 0.8), // FIXED: deprecated withOpacity
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -138,17 +214,17 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2), // FIXED: deprecated withOpacity
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 4),
                     ),
                     child: Icon(
-                      widget.friend.avatar,
+                      _friend.avatar,
                       color: Colors.white,
                       size: 50,
                     ),
                   ),
-                  if (widget.friend.isOnline)
+                  if (_friend.isOnline)
                     Positioned(
                       bottom: 5,
                       right: 5,
@@ -169,17 +245,17 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               
               // Name and Username
               Text(
-                widget.friend.name,
+                _friend.name,
                 style: AppTextStyles.heroTitle.copyWith(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                widget.friend.username,
-                style: AppTextStyles.heroSubtitle.copyWith(
+                _friend.username,
+                style: AppTextStyles.cardSubtitle.copyWith(
                   fontSize: 16,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9), // FIXED: deprecated withOpacity
                 ),
               ),
               
@@ -192,20 +268,20 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                   vertical: AppDimensions.spaceS,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2), // FIXED: deprecated withOpacity
                   borderRadius: BorderRadius.circular(AppDimensions.radiusL),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      widget.friend.isOnline ? Icons.circle : Icons.access_time,
-                      color: widget.friend.isOnline ? AppColors.success : Colors.white.withOpacity(0.8),
+                      _friend.isOnline ? Icons.circle : Icons.access_time,
+                      color: _friend.isOnline ? AppColors.success : Colors.white.withValues(alpha: 0.8), // FIXED: deprecated withOpacity
                       size: 16,
                     ),
                     const SizedBox(width: AppDimensions.spaceS),
                     Text(
-                      widget.friend.isOnline ? 'Online & Exploring' : _formatLastSeen(widget.friend.lastSeen),
+                      _friend.isOnline ? 'Online & Exploring' : _formatLastSeen(_friend.lastSeen),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -223,22 +299,22 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _QuickStat(
-                    value: '${widget.friend.totalTrips}',
+                    value: '${_friend.totalTrips}',
                     label: 'Trips',
                     icon: Icons.route,
                   ),
                   _QuickStat(
-                    value: '${widget.friend.badges}',
+                    value: '${_friend.badges}',
                     label: 'Badges',
                     icon: Icons.emoji_events,
                   ),
                   _QuickStat(
-                    value: '${widget.friend.currentStreak}',
+                    value: '${_friend.currentStreak}',
                     label: 'Streak',
                     icon: Icons.local_fire_department,
                   ),
                   _QuickStat(
-                    value: '${widget.friend.mutualFriends}',
+                    value: '${_friend.mutualFriends}',
                     label: 'Mutual',
                     icon: Icons.people,
                   ),
@@ -254,7 +330,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                     child: ElevatedButton.icon(
                       onPressed: _toggleFollow,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isFollowing ? Colors.white.withOpacity(0.2) : Colors.white,
+                        backgroundColor: _isFollowing ? Colors.white.withValues(alpha: 0.2) : Colors.white, // FIXED: deprecated withOpacity
                         foregroundColor: _isFollowing ? Colors.white : AppColors.amethyst600,
                         side: _isFollowing ? const BorderSide(color: Colors.white) : null,
                       ),
@@ -280,7 +356,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                   const SizedBox(width: AppDimensions.spaceM),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2), // FIXED: deprecated withOpacity
                       borderRadius: BorderRadius.circular(AppDimensions.radiusL),
                     ),
                     child: IconButton(
@@ -316,16 +392,16 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               Expanded(
                 child: _StatCard(
                   title: 'Total Distance',
-                  value: '${widget.friend.totalDistance.toStringAsFixed(1)} km',
+                  value: '${_friend.totalDistance.toStringAsFixed(1)} km',
                   icon: Icons.straighten,
-                  color: AppColors.info,
+                  color: AppColors.amethyst600,
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
               Expanded(
                 child: _StatCard(
                   title: 'Exploration Time',
-                  value: '${widget.friend.totalHours}h',
+                  value: '${_friend.totalHours}h',
                   icon: Icons.access_time,
                   color: AppColors.success,
                 ),
@@ -340,18 +416,18 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               Expanded(
                 child: _StatCard(
                   title: 'Favorite Type',
-                  value: widget.friend.favoriteType,
+                  value: _friend.favoriteType,
                   icon: Icons.favorite,
-                  color: AppColors.challengeCrimson,
+                  color: AppColors.crawlCrimson,
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceM),
               Expanded(
                 child: _StatCard(
                   title: 'Best Streak',
-                  value: '${widget.friend.bestStreak} days',
+                  value: '${_friend.bestStreak} days',
                   icon: Icons.local_fire_department,
-                  color: AppColors.fitnessAmber,
+                  color: AppColors.sportAmber,
                 ),
               ),
             ],
@@ -366,8 +442,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
           ),
           const SizedBox(height: AppDimensions.spaceM),
           
-          ...widget.friend.tripTypeStats.entries.map((entry) {
-            final total = widget.friend.tripTypeStats.values.reduce((a, b) => a + b);
+          ..._friend.tripTypeStats.entries.map((entry) {
+            final total = _friend.tripTypeStats.values.reduce((a, b) => a + b);
             final percentage = (entry.value / total * 100).round();
             final color = TripTypeHelper.getColor(entry.key);
             final icon = TripTypeHelper.getIcon(entry.key);
@@ -384,7 +460,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                   Container(
                     padding: const EdgeInsets.all(AppDimensions.spaceS),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
                       borderRadius: BorderRadius.circular(AppDimensions.spaceS),
                     ),
                     child: Icon(icon, color: color, size: 20),
@@ -409,7 +485,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                     width: 100,
                     child: LinearProgressIndicator(
                       value: entry.value / total,
-                      backgroundColor: color.withOpacity(0.2),
+                      backgroundColor: color.withValues(alpha: 0.2), // FIXED: deprecated withOpacity
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                       minHeight: 6,
                     ),
@@ -417,7 +493,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                 ],
               ),
             );
-          }).toList(),
+          }),
           
           const SizedBox(height: AppDimensions.spaceL),
           
@@ -428,7 +504,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
           ),
           const SizedBox(height: AppDimensions.spaceM),
           
-          ...widget.friend.recentActivity.map((activity) {
+          ..._friend.recentActivity.map((activity) {
             return Container(
               margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
               padding: const EdgeInsets.all(AppDimensions.spaceL),
@@ -441,7 +517,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                   Container(
                     padding: const EdgeInsets.all(AppDimensions.spaceS),
                     decoration: BoxDecoration(
-                      color: activity.color.withOpacity(0.1),
+                      color: activity.color.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -466,7 +542,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -475,9 +551,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
   Widget _buildTripsTab() {
     return ListView.builder(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
-      itemCount: widget.friend.recentTrips.length,
+      itemCount: _friend.recentTrips.length,
       itemBuilder: (context, index) {
-        final trip = widget.friend.recentTrips[index];
+        final trip = _friend.recentTrips[index];
         return _TripCard(trip: trip, onTap: () => _viewTrip(trip));
       },
     );
@@ -492,9 +568,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
         crossAxisSpacing: AppDimensions.spaceM,
         mainAxisSpacing: AppDimensions.spaceM,
       ),
-      itemCount: widget.friend.earnedBadges.length,
+      itemCount: _friend.earnedBadges.length,
       itemBuilder: (context, index) {
-        final badge = widget.friend.earnedBadges[index];
+        final badge = _friend.earnedBadges[index];
         return _BadgeCard(badge: badge);
       },
     );
@@ -508,15 +584,15 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isFollowing 
-            ? 'Now following ${widget.friend.name}' 
-            : 'Unfollowed ${widget.friend.name}'),
+            ? 'Now following ${_friend.name}' 
+            : 'Unfollowed ${_friend.name}'),
       ),
     );
   }
 
   void _sendMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening chat with ${widget.friend.name}...')),
+      SnackBar(content: Text('Opening chat with ${_friend.name}...')),
     );
   }
 
@@ -524,7 +600,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Challenge ${widget.friend.name}'),
+        title: Text('Challenge ${_friend.name}'),
         content: const Text('Choose a challenge type:'),
         actions: [
           TextButton(
@@ -552,13 +628,13 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
 
   void _createChallenge(String type) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$type challenge sent to ${widget.friend.name}!')),
+      SnackBar(content: Text('$type challenge sent to ${_friend.name}!')),
     );
   }
 
   void _shareProfile() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Sharing ${widget.friend.name}\'s profile...')),
+      SnackBar(content: Text('Sharing ${_friend.name}\'s profile...')),
     );
   }
 
@@ -566,7 +642,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Block ${widget.friend.name}?'),
+        title: Text('Block ${_friend.name}?'),
         content: const Text('Blocked users won\'t be able to see your profile or send you messages.'),
         actions: [
           TextButton(
@@ -578,7 +654,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               Navigator.pop(context);
               Navigator.pop(context); // Go back to previous screen
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${widget.friend.name} has been blocked')),
+                SnackBar(content: Text('${_friend.name} has been blocked')),
               );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
@@ -591,7 +667,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
 
   void _reportUser() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Report submitted for ${widget.friend.name}')),
+      SnackBar(content: Text('Report submitted for ${_friend.name}')),
     );
   }
 
@@ -657,7 +733,7 @@ class _QuickStat extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8), // FIXED: deprecated withOpacity
             fontSize: 12,
           ),
         ),
@@ -695,7 +771,7 @@ class _StatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppDimensions.spaceS),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
                   borderRadius: BorderRadius.circular(AppDimensions.spaceS),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -744,7 +820,7 @@ class _TripCard extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(AppDimensions.spaceS),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
             borderRadius: BorderRadius.circular(AppDimensions.spaceS),
           ),
           child: Icon(icon, color: color, size: 20),
@@ -753,7 +829,7 @@ class _TripCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${trip.distance} km • ${trip.duration}', style: AppTextStyles.cardSubtitle),
+            Text('${trip.distance} • ${trip.duration}', style: AppTextStyles.cardSubtitle),
             Text(_formatActivityTime(trip.completedAt), style: AppTextStyles.caption),
           ],
         ),

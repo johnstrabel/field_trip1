@@ -1,86 +1,67 @@
-// lib/screens/infection_lobby_screen.dart
+// lib/screens/infection_lobby_screen.dart - FIXED VERSION
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/infection_game.dart';
 import '../theme/app_theme.dart';
 
 class InfectionLobbyScreen extends StatefulWidget {
   final GameSession? existingSession;
   
-  const InfectionLobbyScreen({Key? key, this.existingSession}) : super(key: key);
+  const InfectionLobbyScreen({
+    super.key,
+    this.existingSession,
+  });
 
   @override
-  _InfectionLobbyScreenState createState() => _InfectionLobbyScreenState();
+  State<InfectionLobbyScreen> createState() => _InfectionLobbyScreenState();
 }
 
 class _InfectionLobbyScreenState extends State<InfectionLobbyScreen> {
   late GameSession _gameSession;
-  InfectionMode _selectedMode = InfectionMode.freeForAll;
-  String _gameName = '';
-  Duration _gameDuration = const Duration(minutes: 30);
-
+  late Duration _gameDuration;
+  final TextEditingController _gameNameController = TextEditingController();
+  
   @override
   void initState() {
     super.initState();
     if (widget.existingSession != null) {
       _gameSession = widget.existingSession!;
-      _selectedMode = _gameSession.mode;
-      _gameName = _gameSession.name;
+      _gameNameController.text = _gameSession.name;
     } else {
       _createNewSession();
     }
+    _gameDuration = Duration(seconds: _gameSession.rules['gameDuration'] ?? 1800);
   }
-
+  
   void _createNewSession() {
     _gameSession = GameSession(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _gameName.isEmpty ? 'Infection Game' : _gameName,
-      mode: _selectedMode,
+      id: 'game_${DateTime.now().millisecondsSinceEpoch}',
+      name: 'New Infection Game',
+      mode: InfectionMode.freeForAll,
       players: [],
       createdAt: DateTime.now(),
-      rules: _getDefaultRules(),
+      rules: {
+        'maxPlayers': 10,
+        'initialInfected': 1,
+        'tagRange': 10.0,
+        'gameDuration': 1800, // 30 minutes
+      },
       status: GameStatus.lobby,
-      creatorId: 'current_user', // TODO: Get actual user ID
+      creatorId: 'current_user',
       gameLog: [],
     );
-  }
-
-  Map<String, dynamic> _getDefaultRules() {
-    switch (_selectedMode) {
-      case InfectionMode.arena:
-        return {
-          'maxPlayers': 20,
-          'initialInfected': 1,
-          'tagRange': 5.0, // meters
-          'boundaryRequired': true,
-        };
-      case InfectionMode.freeForAll:
-        return {
-          'maxPlayers': 50,
-          'initialInfected': 1,
-          'tagRange': 10.0,
-          'allowPublicTransport': false, // For runners
-        };
-      case InfectionMode.crawl:
-        return {
-          'maxPlayers': 30,
-          'initialInfected': 1,
-          'tagRange': 10.0,
-          'drinkImmunityDuration': 300, // 5 minutes in seconds
-          'drinkFreezeDuration': 300,
-          'requireDrinkProof': true,
-        };
-    }
+    _gameNameController.text = _gameSession.name;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Infection Game'),
+        title: const Text('Infection Game Lobby'),
         backgroundColor: AppColors.crawlCrimson,
         foregroundColor: Colors.white,
         actions: [
-          if (_gameSession.creatorId == 'current_user')
+          if (widget.existingSession == null)
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: _showGameSettings,
@@ -89,52 +70,9 @@ class _InfectionLobbyScreenState extends State<InfectionLobbyScreen> {
       ),
       body: Column(
         children: [
-          // Game Mode Selection (only for creator)
-          if (_gameSession.creatorId == 'current_user' && _gameSession.status == GameStatus.lobby)
-            _buildModeSelection(),
-          
-          // Game Info
           _buildGameInfo(),
-          
-          // Player List
           Expanded(child: _buildPlayerList()),
-          
-          // Bottom Actions
-          _buildBottomActions(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeSelection() {
-    return Container(
-      margin: const EdgeInsets.all(AppDimensions.spaceL),
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Game Mode', style: AppTextStyles.sectionTitle),
-          const SizedBox(height: AppDimensions.spaceM),
-          Column(
-            children: InfectionMode.values.map((mode) => 
-              RadioListTile<InfectionMode>(
-                title: Text(_getModeTitle(mode)),
-                subtitle: Text(_getModeDescription(mode)),
-                value: mode,
-                groupValue: _selectedMode,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedMode = value!;
-                    _createNewSession();
-                  });
-                },
-              ),
-            ).toList(),
-          ),
+          _buildActionButtons(),
         ],
       ),
     );
@@ -207,96 +145,150 @@ class _InfectionLobbyScreenState extends State<InfectionLobbyScreen> {
           const SizedBox(height: AppDimensions.spaceM),
           Expanded(
             child: _gameSession.players.isEmpty 
-              ? _buildEmptyPlayerList()
-              : _buildActivePlayerList(),
+              ? const Center(
+                  child: Text(
+                    'No players yet. Invite friends to join!',
+                    style: AppTextStyles.body,
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: _gameSession.players.length,
+                  itemBuilder: (context, index) {
+                    final player = _gameSession.players[index];
+                    return _buildPlayerTile(player);
+                  },
+                ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyPlayerList() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spaceXL),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 64,
-              color: AppColors.textSecond,
-            ),
-            const SizedBox(height: AppDimensions.spaceM),
-            Text(
-              'Waiting for players...',
-              style: AppTextStyles.cardTitle,
-            ),
-            const SizedBox(height: AppDimensions.spaceS),
-            Text(
-              'Share the game code to invite friends',
-              style: AppTextStyles.cardSubtitle,
-            ),
-          ],
+  Widget _buildPlayerTile(PlayerState player) {
+    Color roleColor;
+    IconData roleIcon;
+    
+    switch (player.role) {
+      case PlayerRole.runner:
+        roleColor = Colors.blue;
+        roleIcon = Icons.directions_run;
+        break;
+      case PlayerRole.infected:
+        roleColor = Colors.red;
+        roleIcon = Icons.coronavirus;
+        break;
+      case PlayerRole.eliminated:
+        roleColor = Colors.grey;
+        roleIcon = Icons.close;
+        break;
+    }
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: roleColor,
+          child: Icon(roleIcon, color: Colors.white),
         ),
+        title: Text(player.displayName),
+        subtitle: Text(_getRoleText(player.role)),
+        trailing: player.userId == _gameSession.creatorId
+          ? const Icon(Icons.star, color: Colors.amber)
+          : null,
       ),
     );
   }
 
-  Widget _buildActivePlayerList() {
-    return ListView.builder(
-      itemCount: _gameSession.players.length,
-      itemBuilder: (context, index) {
-        final player = _gameSession.players[index];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: _getRoleColor(player.role),
-            child: Icon(
-              _getRoleIcon(player.role),
-              color: Colors.white,
-            ),
-          ),
-          title: Text(player.displayName),
-          subtitle: Text(_getRoleText(player.role)),
-          trailing: player.userId == _gameSession.creatorId
-            ? const Icon(Icons.crown, color: AppColors.warning)
-            : null,
-        );
-      },
-    );
-  }
-
-  Widget _buildBottomActions() {
+  Widget _buildActionButtons() {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
       child: Column(
         children: [
-          if (_gameSession.creatorId == 'current_user' && _gameSession.status == GameStatus.lobby)
+          if (widget.existingSession == null) ...[
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _gameSession.players.length >= 2 ? _startGame : null,
+              child: ElevatedButton.icon(
+                onPressed: _addMockPlayers,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Mock Players'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
+                  backgroundColor: AppColors.exploreTeal,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceM),
                 ),
-                child: Text('Start Game (${_gameSession.players.length}/2 min)'),
               ),
             ),
-          
-          const SizedBox(height: AppDimensions.spaceM),
-          
+            const SizedBox(height: AppDimensions.spaceM),
+          ],
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _shareGameCode,
-              child: const Text('Share Game Code'),
+            child: ElevatedButton.icon(
+              onPressed: _gameSession.players.length >= 2 ? _startGame : null,
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Start Game'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.crawlCrimson,
+                foregroundColor: Colors.white,
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addMockPlayers() {
+    final mockPlayers = [
+      PlayerState(
+        userId: 'player_1',
+        displayName: 'Alice',
+        role: PlayerRole.runner,
+        actions: [],
+      ),
+      PlayerState(
+        userId: 'player_2',
+        displayName: 'Bob',
+        role: PlayerRole.infected,
+        actions: [],
+      ),
+      PlayerState(
+        userId: 'player_3',
+        displayName: 'Charlie',
+        role: PlayerRole.runner,
+        actions: [],
+      ),
+    ];
+    
+    setState(() {
+      _gameSession = GameSession(
+        id: _gameSession.id,
+        name: _gameSession.name,
+        mode: _gameSession.mode,
+        players: [..._gameSession.players, ...mockPlayers],
+        createdAt: _gameSession.createdAt,
+        rules: _gameSession.rules,
+        status: _gameSession.status,
+        creatorId: _gameSession.creatorId,
+        gameLog: _gameSession.gameLog,
+      );
+    });
+  }
+
+  void _startGame() {
+    // TODO: Navigate to active game screen
+    Navigator.pushNamed(context, '/infection-game');
+  }
+
+  void _showGameSettings() {
+    // TODO: Show game configuration dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Game Settings'),
+        content: const Text('Game configuration options coming soon!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -306,22 +298,11 @@ class _InfectionLobbyScreenState extends State<InfectionLobbyScreen> {
   String _getModeTitle(InfectionMode mode) {
     switch (mode) {
       case InfectionMode.arena:
-        return 'Arena Mode';
+        return 'Arena';
       case InfectionMode.freeForAll:
-        return 'Free-for-All';
+        return 'Free for All';
       case InfectionMode.crawl:
-        return 'Drinking Variant';
-    }
-  }
-
-  String _getModeDescription(InfectionMode mode) {
-    switch (mode) {
-      case InfectionMode.arena:
-        return 'Fixed boundary, no player visibility';
-      case InfectionMode.freeForAll:
-        return 'Open world, infected see runners';
-      case InfectionMode.crawl:
-        return 'Bar crawl with drink immunity/freeze';
+        return 'Crawl Mode';
     }
   }
 
@@ -340,28 +321,6 @@ class _InfectionLobbyScreenState extends State<InfectionLobbyScreen> {
     }
   }
 
-  Color _getRoleColor(PlayerRole role) {
-    switch (role) {
-      case PlayerRole.runner:
-        return AppColors.success;
-      case PlayerRole.infected:
-        return AppColors.error;
-      case PlayerRole.eliminated:
-        return AppColors.textSecond;
-    }
-  }
-
-  IconData _getRoleIcon(PlayerRole role) {
-    switch (role) {
-      case PlayerRole.runner:
-        return Icons.directions_run;
-      case PlayerRole.infected:
-        return Icons.coronavirus;
-      case PlayerRole.eliminated:
-        return Icons.close;
-    }
-  }
-
   String _getRoleText(PlayerRole role) {
     switch (role) {
       case PlayerRole.runner:
@@ -373,48 +332,9 @@ class _InfectionLobbyScreenState extends State<InfectionLobbyScreen> {
     }
   }
 
-  void _showGameSettings() {
-    // TODO: Show game settings dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Game Settings'),
-        content: const Text('Game settings coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _startGame() {
-    // TODO: Implement game start logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Starting infection game...'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    
-    // Navigate to active game screen
-    Navigator.pushReplacementNamed(context, '/infection-game');
-  }
-
-  void _shareGameCode() {
-    // TODO: Implement game code sharing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Game Code: ${_gameSession.id.substring(0, 6).toUpperCase()}'),
-        action: SnackBarAction(
-          label: 'Copy',
-          onPressed: () {
-            // TODO: Copy to clipboard
-          },
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _gameNameController.dispose();
+    super.dispose();
   }
 }

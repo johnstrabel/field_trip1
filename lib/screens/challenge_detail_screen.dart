@@ -1,24 +1,25 @@
-// lib/screens/challenge_detail_screen.dart
+// lib/screens/challenge_detail_screen.dart - FIXED TO ACCEPT STRING ID
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class ChallengeDetailScreen extends StatefulWidget {
-  final Challenge challenge;
+  final String challengeId; // CHANGED: Now accepts String instead of Challenge object
 
   const ChallengeDetailScreen({
-    Key? key,
-    required this.challenge,
-  }) : super(key: key);
+    super.key, // FIXED: Use super.key
+    required this.challengeId, // CHANGED: Parameter name to match main.dart
+  });
 
   @override
-  _ChallengeDetailScreenState createState() => _ChallengeDetailScreenState();
+  State<ChallengeDetailScreen> createState() => _ChallengeDetailScreenState(); // FIXED: Remove underscore
 }
 
 class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late AnimationController _progressController;
+  late Challenge _challenge; // Create challenge object from ID
   bool _isParticipating = false;
 
   @override
@@ -30,12 +31,109 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
       vsync: this,
     );
     
-    _isParticipating = widget.challenge.isParticipating;
+    _challenge = _createMockChallengeFromId(widget.challengeId); // Create mock challenge
+    _isParticipating = _challenge.isParticipating;
     
     // Animate progress on screen load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _progressController.forward();
     });
+  }
+
+  // ADDED: Create mock challenge from ID for development
+  Challenge _createMockChallengeFromId(String challengeId) {
+    return Challenge(
+      id: challengeId,
+      title: 'Challenge $challengeId',
+      description: 'Complete this exciting challenge and earn rewards!',
+      objective: 'Complete 5 different types of trips in 30 days',
+      icon: Icons.emoji_events,
+      color: AppColors.crawlCrimson,
+      startDate: DateTime.now().subtract(const Duration(days: 5)),
+      endDate: DateTime.now().add(const Duration(days: 25)),
+      reward: '500 Points',
+      rewardDetails: 'Earn 500 points and unlock the Explorer Badge',
+      rules: [
+        'Complete at least 5 trips',
+        'Each trip must be different type',
+        'Complete within 30 days',
+        'Share at least 2 trips with friends',
+      ],
+      tips: [
+        'Start with easy explore trips',
+        'Try different neighborhoods',
+        'Invite friends for group trips',
+        'Check the community hub for inspiration',
+      ],
+      milestones: [
+        ChallengeMilestone(
+          title: 'First Trip',
+          description: 'Complete your first trip of any type',
+        ),
+        ChallengeMilestone(
+          title: 'Explorer',
+          description: 'Complete 2 different trip types',
+        ),
+        ChallengeMilestone(
+          title: 'Adventurer',
+          description: 'Complete 3 different trip types',
+        ),
+        ChallengeMilestone(
+          title: 'Social Explorer',
+          description: 'Share a trip with friends',
+        ),
+        ChallengeMilestone(
+          title: 'Challenge Master',
+          description: 'Complete all 5 trip types',
+        ),
+      ],
+      leaderboard: [
+        ChallengeParticipant(
+          id: 'user1',
+          name: 'Alex Chen',
+          avatar: Icons.person,
+          milestonesCompleted: 5,
+          totalMilestones: 5,
+          points: 500,
+          isCurrentUser: false,
+        ),
+        ChallengeParticipant(
+          id: 'current_user',
+          name: 'You',
+          avatar: Icons.person,
+          milestonesCompleted: 3,
+          totalMilestones: 5,
+          points: 300,
+          isCurrentUser: true,
+        ),
+        ChallengeParticipant(
+          id: 'user3',
+          name: 'Sarah Kim',
+          avatar: Icons.person,
+          milestonesCompleted: 2,
+          totalMilestones: 5,
+          points: 200,
+          isCurrentUser: false,
+        ),
+      ],
+      recentActivity: [
+        ChallengeActivity(
+          description: 'Alex Chen completed the challenge!',
+          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          avatar: Icons.person,
+          activityType: ActivityType.milestone,
+        ),
+        ChallengeActivity(
+          description: 'Sarah Kim joined the challenge',
+          timestamp: DateTime.now().subtract(const Duration(hours: 6)),
+          avatar: Icons.person,
+          activityType: ActivityType.joined,
+        ),
+      ],
+      participantCount: 156,
+      isParticipating: true,
+      userProgress: 3,
+    );
   }
 
   @override
@@ -56,7 +154,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
               expandedHeight: 280,
               floating: false,
               pinned: true,
-              backgroundColor: widget.challenge.color,
+              backgroundColor: _challenge.color,
               foregroundColor: Colors.white,
               flexibleSpace: FlexibleSpaceBar(
                 background: _buildChallengeHeader(),
@@ -103,7 +201,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
                 controller: _tabController,
                 indicatorColor: Colors.white,
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.white.withOpacity(0.7),
+                unselectedLabelColor: Colors.white.withValues(alpha: 0.7), // FIXED: deprecated withOpacity
                 tabs: const [
                   Tab(text: 'Overview', icon: Icon(Icons.info_outline, size: 20)),
                   Tab(text: 'Leaderboard', icon: Icon(Icons.emoji_events, size: 20)),
@@ -130,8 +228,8 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            widget.challenge.color,
-            widget.challenge.color.withOpacity(0.8),
+            _challenge.color,
+            _challenge.color.withValues(alpha: 0.8), // FIXED: deprecated withOpacity
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -149,12 +247,12 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2), // FIXED: deprecated withOpacity
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 3),
                 ),
                 child: Icon(
-                  widget.challenge.icon,
+                  _challenge.icon,
                   color: Colors.white,
                   size: 40,
                 ),
@@ -164,7 +262,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
               
               // Challenge Title & Description
               Text(
-                widget.challenge.title,
+                _challenge.title,
                 style: AppTextStyles.heroTitle.copyWith(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -173,10 +271,10 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
               ),
               const SizedBox(height: AppDimensions.spaceS),
               Text(
-                widget.challenge.description,
-                style: AppTextStyles.heroSubtitle.copyWith(
+                _challenge.description,
+                style: AppTextStyles.cardSubtitle.copyWith(
                   fontSize: 14,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9), // FIXED: deprecated withOpacity
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -190,17 +288,17 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
                 children: [
                   _HeaderStat(
                     icon: Icons.people,
-                    value: '${widget.challenge.participantCount}',
+                    value: '${_challenge.participantCount}',
                     label: 'Participants',
                   ),
                   _HeaderStat(
                     icon: Icons.access_time,
-                    value: _formatTimeLeft(widget.challenge.endDate),
+                    value: _formatTimeLeft(_challenge.endDate),
                     label: 'Time Left',
                   ),
                   _HeaderStat(
                     icon: Icons.emoji_events,
-                    value: widget.challenge.reward,
+                    value: _challenge.reward,
                     label: 'Reward',
                   ),
                 ],
@@ -215,11 +313,11 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
                   onPressed: _toggleParticipation,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _isParticipating 
-                        ? Colors.white.withOpacity(0.2) 
+                        ? Colors.white.withValues(alpha: 0.2) // FIXED: deprecated withOpacity
                         : Colors.white,
                     foregroundColor: _isParticipating 
                         ? Colors.white 
-                        : widget.challenge.color,
+                        : _challenge.color,
                     side: _isParticipating 
                         ? const BorderSide(color: Colors.white) 
                         : null,
@@ -269,25 +367,25 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
           _DetailCard(
             icon: Icons.flag,
             title: 'Objective',
-            content: widget.challenge.objective,
+            content: _challenge.objective,
           ),
           
           _DetailCard(
             icon: Icons.schedule,
             title: 'Duration',
-            content: '${_formatDate(widget.challenge.startDate)} - ${_formatDate(widget.challenge.endDate)}',
+            content: '${_formatDate(_challenge.startDate)} - ${_formatDate(_challenge.endDate)}',
           ),
           
           _DetailCard(
             icon: Icons.rule,
             title: 'Rules',
-            content: widget.challenge.rules.join('\n• '),
+            content: _challenge.rules.join('\n• '),
           ),
           
           _DetailCard(
             icon: Icons.emoji_events,
             title: 'Rewards',
-            content: widget.challenge.rewardDetails,
+            content: _challenge.rewardDetails,
           ),
           
           const SizedBox(height: AppDimensions.spaceL),
@@ -299,19 +397,19 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
           ),
           const SizedBox(height: AppDimensions.spaceM),
           
-          ...widget.challenge.milestones.asMap().entries.map((entry) {
+          ..._challenge.milestones.asMap().entries.map((entry) {
             final index = entry.key;
             final milestone = entry.value;
-            final isCompleted = _isParticipating && index < widget.challenge.userProgress;
-            final isActive = _isParticipating && index == widget.challenge.userProgress;
+            final isCompleted = _isParticipating && index < _challenge.userProgress;
+            final isActive = _isParticipating && index == _challenge.userProgress;
             
             return _MilestoneCard(
               milestone: milestone,
               isCompleted: isCompleted,
               isActive: isActive,
-              color: widget.challenge.color,
+              color: _challenge.color,
             );
-          }).toList(),
+          }),
           
           const SizedBox(height: AppDimensions.spaceL),
           
@@ -319,9 +417,9 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
           Container(
             padding: const EdgeInsets.all(AppDimensions.spaceL),
             decoration: BoxDecoration(
-              color: widget.challenge.color.withOpacity(0.1),
+              color: _challenge.color.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
               borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-              border: Border.all(color: widget.challenge.color.withOpacity(0.3)),
+              border: Border.all(color: _challenge.color.withValues(alpha: 0.3)), // FIXED: deprecated withOpacity
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,21 +428,21 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
                   children: [
                     Icon(
                       Icons.lightbulb_outline,
-                      color: widget.challenge.color,
+                      color: _challenge.color,
                       size: 20,
                     ),
                     const SizedBox(width: AppDimensions.spaceS),
                     Text(
                       'Pro Tips',
                       style: AppTextStyles.cardTitle.copyWith(
-                        color: widget.challenge.color,
+                        color: _challenge.color,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: AppDimensions.spaceM),
-                ...widget.challenge.tips.map((tip) {
+                ..._challenge.tips.map((tip) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppDimensions.spaceS),
                     child: Row(
@@ -355,7 +453,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
                           height: 6,
                           margin: const EdgeInsets.only(top: 6),
                           decoration: BoxDecoration(
-                            color: widget.challenge.color,
+                            color: _challenge.color,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -369,7 +467,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
                       ],
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),
@@ -379,21 +477,21 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
   }
 
   Widget _buildProgressCard() {
-    final progress = widget.challenge.userProgress / widget.challenge.milestones.length;
+    final progress = _challenge.userProgress / _challenge.milestones.length;
     
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            widget.challenge.color.withOpacity(0.1),
-            widget.challenge.color.withOpacity(0.05),
+            _challenge.color.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
+            _challenge.color.withValues(alpha: 0.05), // FIXED: deprecated withOpacity
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-        border: Border.all(color: widget.challenge.color.withOpacity(0.3)),
+        border: Border.all(color: _challenge.color.withValues(alpha: 0.3)), // FIXED: deprecated withOpacity
       ),
       child: Column(
         children: [
@@ -403,14 +501,14 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
               Text(
                 'Progress',
                 style: AppTextStyles.cardTitle.copyWith(
-                  color: widget.challenge.color,
+                  color: _challenge.color,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                '${widget.challenge.userProgress}/${widget.challenge.milestones.length}',
+                '${_challenge.userProgress}/${_challenge.milestones.length}',
                 style: AppTextStyles.cardTitle.copyWith(
-                  color: widget.challenge.color,
+                  color: _challenge.color,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -422,8 +520,8 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
             builder: (context, child) {
               return LinearProgressIndicator(
                 value: progress * _progressController.value,
-                backgroundColor: widget.challenge.color.withOpacity(0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(widget.challenge.color),
+                backgroundColor: _challenge.color.withValues(alpha: 0.2), // FIXED: deprecated withOpacity
+                valueColor: AlwaysStoppedAnimation<Color>(_challenge.color),
                 minHeight: 8,
               );
             },
@@ -442,14 +540,14 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
   Widget _buildLeaderboardTab() {
     return ListView.builder(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
-      itemCount: widget.challenge.leaderboard.length,
+      itemCount: _challenge.leaderboard.length,
       itemBuilder: (context, index) {
-        final participant = widget.challenge.leaderboard[index];
+        final participant = _challenge.leaderboard[index];
         return _LeaderboardCard(
           participant: participant,
           rank: index + 1,
           isCurrentUser: participant.isCurrentUser,
-          color: widget.challenge.color,
+          color: _challenge.color,
         );
       },
     );
@@ -458,9 +556,9 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
   Widget _buildActivityTab() {
     return ListView.builder(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
-      itemCount: widget.challenge.recentActivity.length,
+      itemCount: _challenge.recentActivity.length,
       itemBuilder: (context, index) {
-        final activity = widget.challenge.recentActivity[index];
+        final activity = _challenge.recentActivity[index];
         return _ActivityCard(activity: activity);
       },
     );
@@ -476,8 +574,8 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
       _progressController.forward();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Joined ${widget.challenge.title}!'),
-          backgroundColor: widget.challenge.color,
+          content: Text('Joined ${_challenge.title}!'),
+          backgroundColor: _challenge.color,
         ),
       );
     } else {
@@ -493,8 +591,8 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
   void _shareChallenge() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Sharing ${widget.challenge.title}...'),
-        backgroundColor: widget.challenge.color,
+        content: Text('Sharing ${_challenge.title}...'),
+        backgroundColor: _challenge.color,
       ),
     );
   }
@@ -510,7 +608,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Leave Challenge?'),
-        content: Text('Are you sure you want to leave ${widget.challenge.title}? Your progress will be lost.'),
+        content: Text('Are you sure you want to leave ${_challenge.title}? Your progress will be lost.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -530,7 +628,7 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen>
   }
 
   String _getProgressMessage() {
-    final remaining = widget.challenge.milestones.length - widget.challenge.userProgress;
+    final remaining = _challenge.milestones.length - _challenge.userProgress;
     if (remaining == 0) {
       return 'Challenge completed! 🎉';
     } else if (remaining == 1) {
@@ -587,7 +685,7 @@ class _HeaderStat extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8), // FIXED: deprecated withOpacity
             fontSize: 10,
           ),
           textAlign: TextAlign.center,
@@ -623,7 +721,7 @@ class _DetailCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppDimensions.spaceS),
             decoration: BoxDecoration(
-              color: AppColors.amethyst100,
+              color: AppColors.amethyst600.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
               borderRadius: BorderRadius.circular(AppDimensions.spaceS),
             ),
             child: Icon(icon, color: AppColors.amethyst600, size: 20),
@@ -665,7 +763,7 @@ class _MilestoneCard extends StatelessWidget {
       padding: const EdgeInsets.all(AppDimensions.spaceL),
       decoration: BoxDecoration(
         color: isActive 
-            ? color.withOpacity(0.1)
+            ? color.withValues(alpha: 0.1) // FIXED: deprecated withOpacity
             : AppColors.card,
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         border: isActive 
@@ -681,7 +779,7 @@ class _MilestoneCard extends StatelessWidget {
               color: isCompleted 
                   ? color 
                   : isActive 
-                      ? color.withOpacity(0.2)
+                      ? color.withValues(alpha: 0.2) // FIXED: deprecated withOpacity
                       : AppColors.stroke,
               shape: BoxShape.circle,
             ),
@@ -760,11 +858,11 @@ class _LeaderboardCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
       decoration: BoxDecoration(
         color: isCurrentUser 
-            ? color.withOpacity(0.1)
+            ? color.withValues(alpha: 0.1) // FIXED: deprecated withOpacity
             : AppColors.card,
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
         border: isCurrentUser 
-            ? Border.all(color: color.withOpacity(0.5))
+            ? Border.all(color: color.withValues(alpha: 0.5)) // FIXED: deprecated withOpacity
             : null,
       ),
       child: ListTile(
@@ -795,7 +893,7 @@ class _LeaderboardCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.amethyst100,
+                color: AppColors.amethyst600.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -896,7 +994,7 @@ class _ActivityCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.amethyst100,
+              color: AppColors.amethyst600.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -922,8 +1020,8 @@ class _ActivityCard extends StatelessWidget {
             padding: const EdgeInsets.all(AppDimensions.spaceS),
             decoration: BoxDecoration(
               color: activity.activityType == ActivityType.milestone
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.info.withOpacity(0.1),
+                  ? AppColors.success.withValues(alpha: 0.1) // FIXED: deprecated withOpacity
+                  : AppColors.amethyst600.withValues(alpha: 0.1), // FIXED: deprecated withOpacity
               borderRadius: BorderRadius.circular(AppDimensions.spaceS),
             ),
             child: Icon(
@@ -932,7 +1030,7 @@ class _ActivityCard extends StatelessWidget {
                   : Icons.person_add,
               color: activity.activityType == ActivityType.milestone
                   ? AppColors.success
-                  : AppColors.info,
+                  : AppColors.amethyst600,
               size: 16,
             ),
           ),

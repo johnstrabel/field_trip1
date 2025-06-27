@@ -1,28 +1,34 @@
-// lib/screens/group_trip_creation_screen.dart
+// lib/screens/group_trip_creation_screen.dart - FIXED VERSION
 import 'package:flutter/material.dart';
-import '../models/trip.dart' as model;
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/group_trip.dart';
+import '../models/trip.dart' as model;
 import '../theme/app_theme.dart';
 
 class GroupTripCreationScreen extends StatefulWidget {
-  const GroupTripCreationScreen({Key? key}) : super(key: key);
+  const GroupTripCreationScreen({super.key});
 
   @override
-  _GroupTripCreationScreenState createState() => _GroupTripCreationScreenState();
+  State<GroupTripCreationScreen> createState() => _GroupTripCreationScreenState();
 }
 
 class _GroupTripCreationScreenState extends State<GroupTripCreationScreen> {
-  String _tripTitle = '';
-  model.CoreType _selectedType = model.CoreType.explore;
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _waypointController = TextEditingController();
+  
+  model.CoreType _selectedType = model.CoreType.crawl;
+  String? _selectedSubMode;
+  List<model.Waypoint> _waypoints = [];
   List<String> _selectedFriends = [];
-  final List<model.Waypoint> _waypoints = [];
-
-  // Mock friends data - replace with real friend system later
+  
+  // Mock friend data - replace with real friend system later
   final List<Map<String, String>> _mockFriends = [
-    {'id': 'friend1', 'name': 'Alex Chen', 'avatar': '👤'},
-    {'id': 'friend2', 'name': 'Maya Rodriguez', 'avatar': '👤'},
-    {'id': 'friend3', 'name': 'Sam Johnson', 'avatar': '👤'},
-    {'id': 'friend4', 'name': 'Jordan Lee', 'avatar': '👤'},
+    {'id': 'friend1', 'name': 'Alice Johnson'},
+    {'id': 'friend2', 'name': 'Bob Smith'},
+    {'id': 'friend3', 'name': 'Charlie Brown'},
+    {'id': 'friend4', 'name': 'Diana Prince'},
+    {'id': 'friend5', 'name': 'Ethan Hunt'},
   ];
 
   @override
@@ -30,265 +36,380 @@ class _GroupTripCreationScreenState extends State<GroupTripCreationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Group Trip'),
-        backgroundColor: AppColors.card,
+        backgroundColor: AppColors.crawlCrimson,
+        foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimensions.spaceL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Trip Type Selection
-            _buildTripTypeSection(),
-            
-            const SizedBox(height: AppDimensions.spaceL),
-            
-            // Trip Title
-            _buildTitleSection(),
-            
-            const SizedBox(height: AppDimensions.spaceL),
-            
-            // Friend Selection
-            _buildFriendSelectionSection(),
-            
-            const SizedBox(height: AppDimensions.spaceL),
-            
-            // Quick Waypoints (simplified for now)
-            _buildWaypointsSection(),
-            
-            const SizedBox(height: AppDimensions.spaceXL),
-            
-            // Create Trip Button
-            _buildCreateButton(),
-          ],
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppDimensions.spaceL),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBasicInfo(),
+              const SizedBox(height: AppDimensions.spaceXL),
+              _buildTripTypeSelector(),
+              const SizedBox(height: AppDimensions.spaceXL),
+              _buildWaypointSection(),
+              const SizedBox(height: AppDimensions.spaceXL),
+              _buildFriendSelector(),
+              const SizedBox(height: AppDimensions.spaceXL),
+              _buildCreateButton(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTripTypeSection() {
+  Widget _buildBasicInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Trip Details', style: AppTextStyles.sectionTitle),
+        const SizedBox(height: AppDimensions.spaceM),
+        TextFormField(
+          controller: _titleController,
+          decoration: const InputDecoration(
+            labelText: 'Trip Title',
+            hintText: 'Enter a name for your group trip',
+            prefixIcon: Icon(Icons.title),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please enter a trip title';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTripTypeSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Trip Type', style: AppTextStyles.sectionTitle),
         const SizedBox(height: AppDimensions.spaceM),
-        Row(
-          children: model.CoreType.values.map((type) {
-            final helper = TripTypeHelper.fromCoreType(type);
-            final isSelected = _selectedType == type;
-            
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedType = type),
-                child: Container(
-                  margin: const EdgeInsets.only(right: AppDimensions.spaceS),
-                  padding: const EdgeInsets.all(AppDimensions.spaceM),
-                  decoration: BoxDecoration(
-                    color: isSelected ? helper.color.withOpacity(0.1) : AppColors.card,
-                    border: Border.all(
-                      color: isSelected ? helper.color : AppColors.border,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(helper.icon, color: helper.color, size: 32),
-                      const SizedBox(height: AppDimensions.spaceS),
-                      Text(
-                        helper.displayName,
-                        style: AppTextStyles.cardTitle.copyWith(
-                          color: isSelected ? helper.color : AppColors.textMain,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTitleSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Trip Title', style: AppTextStyles.sectionTitle),
-        const SizedBox(height: AppDimensions.spaceM),
-        TextField(
-          onChanged: (value) => setState(() => _tripTitle = value),
-          decoration: InputDecoration(
-            hintText: 'Enter trip title...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-            ),
-            filled: true,
-            fillColor: AppColors.card,
+        ...model.CoreType.values.map((type) {
+          return RadioListTile<model.CoreType>(
+            title: Text(_getTypeTitle(type)),
+            subtitle: Text(_getTypeDescription(type)),
+            value: type,
+            groupValue: _selectedType,
+            onChanged: (value) {
+              setState(() {
+                _selectedType = value!;
+                _selectedSubMode = null; // Reset submode when type changes
+              });
+            },
+            activeColor: _getTypeColor(type),
+          );
+        }).toList(),
+        if (_selectedType == model.CoreType.crawl) ...[
+          const SizedBox(height: AppDimensions.spaceM),
+          Text('Crawl Mode', style: AppTextStyles.sectionSubtitle),
+          const SizedBox(height: AppDimensions.spaceS),
+          Wrap(
+            spacing: AppDimensions.spaceS,
+            children: ['beer_golf', 'bar_hop', 'pub_crawl'].map((mode) {
+              final isSelected = _selectedSubMode == mode;
+              return FilterChip(
+                label: Text(_getSubModeTitle(mode)),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    _selectedSubMode = selected ? mode : null;
+                  });
+                },
+                backgroundColor: isSelected ? AppColors.crawlCrimson.withOpacity(0.2) : null,
+                selectedColor: AppColors.crawlCrimson.withOpacity(0.3),
+              );
+            }).toList(),
           ),
-        ),
+        ],
       ],
     );
   }
 
-  Widget _buildFriendSelectionSection() {
+  Widget _buildWaypointSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Invite Friends', style: AppTextStyles.sectionTitle),
-            Text(
-              '${_selectedFriends.length} selected',
-              style: AppTextStyles.cardSubtitle,
+            Text('Waypoints', style: AppTextStyles.sectionTitle),
+            TextButton.icon(
+              onPressed: _addWaypoint,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Waypoint'),
             ),
           ],
         ),
         const SizedBox(height: AppDimensions.spaceM),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _mockFriends.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final friend = _mockFriends[index];
-              final isSelected = _selectedFriends.contains(friend['id']);
-              
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text(friend['avatar']!),
+        if (_waypoints.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppDimensions.spaceL),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.textSecond.withOpacity(0.3)),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.location_on, size: 48, color: Colors.grey),
+                SizedBox(height: AppDimensions.spaceM),
+                Text(
+                  'No waypoints yet',
+                  style: AppTextStyles.bodySecond,
                 ),
-                title: Text(friend['name']!),
-                trailing: Checkbox(
-                  value: isSelected,
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == true) {
-                        _selectedFriends.add(friend['id']!);
-                      } else {
-                        _selectedFriends.remove(friend['id']!);
-                      }
-                    });
-                  },
+                Text(
+                  'Add stops for your group trip',
+                  style: AppTextStyles.caption,
                 ),
-                onTap: () {
-                  setState(() {
-                    if (isSelected) {
-                      _selectedFriends.remove(friend['id']!);
-                    } else {
-                      _selectedFriends.add(friend['id']!);
-                    }
-                  });
-                },
-              );
-            },
-          ),
-        ),
+              ],
+            ),
+          )
+        else
+          ..._waypoints.asMap().entries.map((entry) {
+            final index = entry.key;
+            final waypoint = entry.value;
+            return _buildWaypointTile(waypoint, index);
+          }).toList(),
       ],
     );
   }
 
-  Widget _buildWaypointsSection() {
+  Widget _buildWaypointTile(model.Waypoint waypoint, int index) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: _getTypeColor(_selectedType),
+          child: Text('${index + 1}'),
+        ),
+        title: Text(waypoint.name),
+        subtitle: waypoint.note.isNotEmpty ? Text(waypoint.note) : null,
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _removeWaypoint(index),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFriendSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Waypoints', style: AppTextStyles.sectionTitle),
+        Text('Invite Friends', style: AppTextStyles.sectionTitle),
         const SizedBox(height: AppDimensions.spaceM),
-        Container(
-          padding: const EdgeInsets.all(AppDimensions.spaceL),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.add_location,
-                size: 48,
-                color: AppColors.textSecond,
-              ),
-              const SizedBox(height: AppDimensions.spaceM),
-              Text(
-                'Add Waypoints',
-                style: AppTextStyles.cardTitle,
-              ),
-              const SizedBox(height: AppDimensions.spaceS),
-              Text(
-                'Use map creation or quick templates',
-                style: AppTextStyles.cardSubtitle,
-              ),
-              const SizedBox(height: AppDimensions.spaceM),
-              ElevatedButton(
-                onPressed: () {
-                  // TODO: Navigate to map creation
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Map creation coming soon!')),
-                  );
-                },
-                child: const Text('Add Waypoints'),
-              ),
-            ],
-          ),
+        Text(
+          'Select friends to invite to this group trip:',
+          style: AppTextStyles.body,
         ),
+        const SizedBox(height: AppDimensions.spaceM),
+        ..._mockFriends.map((friend) {
+          final isSelected = _selectedFriends.contains(friend['id']);
+          return CheckboxListTile(
+            title: Text(friend['name']!),
+            value: isSelected,
+            onChanged: (selected) {
+              setState(() {
+                if (selected == true) {
+                  _selectedFriends.add(friend['id']!);
+                } else {
+                  _selectedFriends.remove(friend['id']);
+                }
+              });
+            },
+            activeColor: AppColors.crawlCrimson,
+          );
+        }).toList(),
       ],
     );
   }
 
   Widget _buildCreateButton() {
-    final canCreate = _tripTitle.isNotEmpty && _selectedFriends.isNotEmpty;
-    
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: canCreate ? _createGroupTrip : null,
+      child: ElevatedButton.icon(
+        onPressed: _createGroupTrip,
+        icon: const Icon(Icons.group_add),
+        label: const Text('Create Group Trip'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: TripTypeHelper.fromCoreType(_selectedType).color,
+          backgroundColor: AppColors.crawlCrimson,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceM),
-        ),
-        child: Text(
-          'Create Group Trip',
-          style: AppTextStyles.buttonText,
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceL),
         ),
       ),
     );
   }
 
+  void _addWaypoint() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Waypoint'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _waypointController,
+              decoration: const InputDecoration(
+                labelText: 'Waypoint Name',
+                hintText: 'e.g., The Irish Pub',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_waypointController.text.trim().isNotEmpty) {
+                setState(() {
+                  _waypoints.add(model.Waypoint(
+                    name: _waypointController.text.trim(),
+                    note: '',
+                    latitude: 40.7589 + (_waypoints.length * 0.001), // Mock coordinates
+                    longitude: -73.9851 + (_waypoints.length * 0.001),
+                  ));
+                });
+                _waypointController.clear();
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeWaypoint(int index) {
+    setState(() {
+      _waypoints.removeAt(index);
+    });
+  }
+
   void _createGroupTrip() {
-    // Create the group trip
+    if (!_formKey.currentState!.validate()) return;
+    
+    if (_waypoints.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add at least one waypoint'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedFriends.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one friend to invite'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final groupTrip = GroupTrip(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _tripTitle,
+      id: 'group_${DateTime.now().millisecondsSinceEpoch}',
+      title: _titleController.text.trim(),
       waypoints: _waypoints,
       createdAt: DateTime.now(),
       coreType: _selectedType,
       participantIds: _selectedFriends,
-      creatorId: 'current_user', // TODO: Get actual current user ID
+      creatorId: 'current_user',
       status: GroupTripStatus.planned,
       userRoles: {
         'current_user': UserRole.creator,
-        ..._selectedFriends.asMap().map((_, friendId) => 
-          MapEntry(friendId, UserRole.invited)),
+        ..._selectedFriends.asMap().map((_, friendId) => MapEntry(friendId, UserRole.invited)),
       },
-      invitedAt: DateTime.now(),
+      subMode: _selectedSubMode,
     );
 
-    // TODO: Save to database and send invitations
-    
-    Navigator.pop(context, groupTrip);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Group trip created! Invitations sent to ${_selectedFriends.length} friends.'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    // Save to Hive
+    try {
+      final box = Hive.box<GroupTrip>('group_trips');
+      box.put(groupTrip.id, groupTrip);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Group trip created successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error creating group trip: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String _getTypeTitle(model.CoreType type) {
+    switch (type) {
+      case model.CoreType.explore:
+        return 'Explore';
+      case model.CoreType.crawl:
+        return 'Crawl';
+      case model.CoreType.sport:
+        return 'Sport';
+    }
+  }
+
+  String _getTypeDescription(model.CoreType type) {
+    switch (type) {
+      case model.CoreType.explore:
+        return 'Sightseeing and discovery adventures';
+      case model.CoreType.crawl:
+        return 'Social nightlife and bar experiences';
+      case model.CoreType.sport:
+        return 'Competitive events with scoring';
+    }
+  }
+
+  Color _getTypeColor(model.CoreType type) {
+    switch (type) {
+      case model.CoreType.explore:
+        return AppColors.exploreTeal;
+      case model.CoreType.crawl:
+        return AppColors.crawlCrimson;
+      case model.CoreType.sport:
+        return AppColors.sportGold;
+    }
+  }
+
+  String _getSubModeTitle(String mode) {
+    switch (mode) {
+      case 'beer_golf':
+        return 'Beer Golf';
+      case 'bar_hop':
+        return 'Bar Hop';
+      case 'pub_crawl':
+        return 'Pub Crawl';
+      default:
+        return mode;
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _waypointController.dispose();
+    super.dispose();
   }
 }

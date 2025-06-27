@@ -17,10 +17,14 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
 
-  // NEW: 3-Type System Colors
+  // NEW: 3-Type System Colors (your existing ones)
   static const Color exploreBlue = Color(0xFF1EA7FF);    // Explore - Traditional sightseeing
-  static const Color crawlCrimson = Color(0xFFD7263D);   // Crawl - Nightlife adventures (changed to crimson)
+  static const Color crawlCrimson = Color(0xFFD7263D);   // Crawl - Nightlife adventures
   static const Color sportAmber = Color(0xFFF4B400);     // Sport - Fitness, games, competitions
+
+  // ADDED: Missing color aliases that the error messages referenced
+  static const Color exploreTeal = exploreBlue;          // Alias for consistency
+  static const Color sportGold = sportAmber;             // Alias for consistency
 
   // OLD: Keep for backward compatibility during migration
   static const Color standardBlue = Color(0xFF1EA7FF);
@@ -34,6 +38,17 @@ class AppColors {
   static const Color onlineGreen = Color(0xFF10B981);
   static const Color onlineBackground = Color(0xFFECFDF5);
   static const Color info = Color(0xFF3B82F6);
+
+  // ADDED: Standard Material Design colors for compatibility
+  static const Color primary = amethyst600;
+  static const Color secondary = sportAmber;
+  static const Color background = surface;
+  static const Color onPrimary = Color(0xFFFFFFFF);
+  static const Color onSecondary = Color(0xFF000000);
+  static const Color onSurface = textPrimary;
+  static const Color onBackground = textPrimary;
+  static const Color onError = Color(0xFFFFFFFF);
+  static const Color divider = stroke;
 }
 
 class AppDimensions {
@@ -76,6 +91,13 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
   
+  // ADDED: Missing text style that was referenced in errors
+  static const TextStyle sectionSubtitle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+  );
+  
   static const TextStyle cardTitle = TextStyle(
     fontSize: 18,
     fontWeight: FontWeight.w600,
@@ -92,6 +114,13 @@ class AppTextStyles {
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
+  );
+  
+  // ADDED: Missing text style that was referenced in errors
+  static const TextStyle bodySecond = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecond,
   );
   
   static const TextStyle caption = TextStyle(
@@ -112,6 +141,7 @@ class AppTextStyles {
     color: AppColors.textSecond,
   );
 
+  // Keep existing aliases
   static const TextStyle textMain = body;
   static const TextStyle chipText = caption;
 }
@@ -147,7 +177,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radiusM),
         ),
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1), // FIXED: Updated deprecated withOpacity
       ),
       
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -256,9 +286,14 @@ class AppTheme {
   static MaterialColor _createMaterialColor(Color color) {
     final List<double> strengths = <double>[.05];
     final Map<int, Color> swatch = <int, Color>{};
-    final int r = color.red, g = color.green, b = color.blue;
+    final int r = (color.r * 255.0).round() & 0xff; // FIXED: Updated deprecated .red
+    final int g = (color.g * 255.0).round() & 0xff; // FIXED: Updated deprecated .green
+    final int b = (color.b * 255.0).round() & 0xff; // FIXED: Updated deprecated .blue
 
-    for (int i = 1; i < 10; i++) strengths.add(0.1 * i);
+    for (int i = 1; i < 10; i++) {
+      strengths.add(0.1 * i);
+    }
+    
     for (var strength in strengths) {
       final double ds = 0.5 - strength;
       swatch[(strength * 1000).round()] = Color.fromRGBO(
@@ -268,7 +303,7 @@ class AppTheme {
         1,
       );
     }
-    return MaterialColor(color.value, swatch);
+    return MaterialColor(color.toARGB32(), swatch); // FIXED: Updated deprecated .value
   }
 }
 
@@ -332,9 +367,13 @@ class TripTypeHelper {
   // Helper for dynamic type resolution - FIXED to map old types to new 3-type system
   static TripTypeHelper fromType(dynamic type) {
     final String typeString;
-    if (type is model.TripType) typeString = type.toString().split('.').last;
-    else if (type is model.CoreType) typeString = type.toString().split('.').last;
-    else typeString = type.toString();
+    if (type is model.TripType) {
+      typeString = type.toString().split('.').last;
+    } else if (type is model.CoreType) {
+      typeString = type.toString().split('.').last;
+    } else {
+      typeString = type.toString();
+    }
 
     switch (typeString.toLowerCase()) {
       case 'standard':
@@ -363,7 +402,7 @@ class TripTypeHelper {
   static List<String> getCoreTypeDisplayNames() => ['All', 'Explore', 'Crawl', 'Sport'];
   
   static Color getCoreTypeColorWithOpacity(model.CoreType coreType, double opacity) => 
-      fromCoreType(coreType).color.withOpacity(opacity);
+      fromCoreType(coreType).color.withValues(alpha: opacity); // FIXED: Updated deprecated withOpacity
 
   // Migration helper
   static model.CoreType migrateTripTypeToCore(model.TripType oldType) {
