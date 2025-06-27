@@ -141,10 +141,10 @@ class _GroupTripCreationScreenState extends State<GroupTripCreationScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Waypoints', style: AppTextStyles.sectionTitle),
-            TextButton.icon(
+            IconButton(
               onPressed: _addWaypoint,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Waypoint'),
+              icon: const Icon(Icons.add_location_alt),
+              color: AppColors.crawlCrimson,
             ),
           ],
         ),
@@ -154,40 +154,37 @@ class _GroupTripCreationScreenState extends State<GroupTripCreationScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(AppDimensions.spaceL),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.textSecond.withOpacity(0.3)),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+              border: Border.all(color: AppColors.stroke),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(Icons.location_on, size: 48, color: Colors.grey),
-                SizedBox(height: AppDimensions.spaceM),
-                Text(
-                  'No waypoints yet',
-                  style: AppTextStyles.bodySecond,
-                ),
-                Text(
-                  'Add stops for your group trip',
-                  style: AppTextStyles.caption,
-                ),
+                Icon(Icons.location_on, size: 48, color: AppColors.textSecond),
+                const SizedBox(height: AppDimensions.spaceM),
+                Text('No waypoints added yet', style: AppTextStyles.body),
+                const SizedBox(height: AppDimensions.spaceS),
+                Text('Tap the + button to add locations', style: AppTextStyles.caption),
               ],
             ),
           )
         else
-          ..._waypoints.asMap().entries.map((entry) {
-            final index = entry.key;
-            final waypoint = entry.value;
-            return _buildWaypointTile(waypoint, index);
-          }).toList(),
+          Column(
+            children: _waypoints.asMap().entries.map((entry) {
+              return _buildWaypointCard(entry.key, entry.value);
+            }).toList(),
+          ),
       ],
     );
   }
 
-  Widget _buildWaypointTile(model.Waypoint waypoint, int index) {
+  Widget _buildWaypointCard(int index, model.Waypoint waypoint) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
+      margin: const EdgeInsets.only(bottom: AppDimensions.spaceS),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _getTypeColor(_selectedType),
+          backgroundColor: AppColors.crawlCrimson,
+          foregroundColor: Colors.white,
           child: Text('${index + 1}'),
         ),
         title: Text(waypoint.name),
@@ -334,7 +331,7 @@ class _GroupTripCreationScreenState extends State<GroupTripCreationScreen> {
         'current_user': UserRole.creator,
         ..._selectedFriends.asMap().map((_, friendId) => MapEntry(friendId, UserRole.invited)),
       },
-      subMode: _selectedSubMode,
+      subMode: _selectedSubMode ?? 'standard', // FIX: Provide default value for nullable String
     );
 
     // Save to Hive
