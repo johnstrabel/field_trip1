@@ -1,8 +1,9 @@
-// lib/screens/dashboard_screen.dart - Complete Updated Version
+// lib/screens/dashboard_screen.dart - FIXED VERSION
+// Fixes drawer connection and Explore Nearby navigation
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'map_trip_creation_screen.dart';
+import 'discovery_map_screen.dart'; // FIXED: Import the correct screen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -50,22 +51,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
+      // FIXED: Proper AppBar setup for drawer
       appBar: AppBar(
         title: const Text('Discover'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        // REMOVED: The leading override that was breaking the drawer
+        // The hamburger menu should appear automatically when drawer is available
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimensions.spaceL),
         child: Column(
           children: [
-            // Hero Banner - FIXED TEXT COLORS
+            // Hero Banner
             _buildHeroBanner(),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Discovery Section Header - UPDATED WITH NAVIGATION
+            // Discovery Section Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -75,14 +78,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/map-discover');
+                    // Navigate to full discovery/community hub
+                    Navigator.pushNamed(context, '/community-hub');
                   },
                   child: Text(
                     'View All',
-                    style: TextStyle(
-                      color: AppColors.amethyst600,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(color: AppColors.amethyst600),
                   ),
                 ),
               ],
@@ -90,125 +91,120 @@ class _DashboardScreenState extends State<DashboardScreen> {
             
             const SizedBox(height: AppDimensions.spaceM),
             
-            // Discovery Card (keeping your existing implementation)
-            _buildDiscoveryCard(),
-           
-            const SizedBox(height: AppDimensions.spaceL),
-            
-            // Friends Activity Section - UPDATED WITH NAVIGATION
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Friends Activity',
-                      style: AppTextStyles.sectionTitle,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/friends');
-                      },
-                      child: Text(
-                        'Manage',
-                        style: TextStyle(
-                          color: AppColors.amethyst600,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppDimensions.spaceM),
-                _buildFriendsActivity(),
-              ],
-            ),
+            // FIXED: Explore Nearby Card with correct navigation to DiscoveryMapScreen
+            _buildExploreNearbyCard(),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Progress Snapshot Section (updated with header)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Friends Activity Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Your Progress',
+                  'Friends Activity',
                   style: AppTextStyles.sectionTitle,
                 ),
-                const SizedBox(height: AppDimensions.spaceM),
-                _buildProgressSnapshot(),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/activity-feed');
+                  },
+                  child: Text(
+                    'Manage',
+                    style: TextStyle(color: AppColors.amethyst600),
+                  ),
+                ),
               ],
             ),
+            
+            const SizedBox(height: AppDimensions.spaceM),
+            
+            // Friends Activity List
+            ..._friendActivities.map((activity) => _buildActivityCard(activity)),
             
             const SizedBox(height: AppDimensions.spaceL),
             
-            // Quick Actions Section
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Quick Actions',
-                  style: AppTextStyles.sectionTitle,
-                ),
-                const SizedBox(height: AppDimensions.spaceM),
-                _buildQuickActions(),
-              ],
+            // Your Progress Section
+            Text(
+              'Your Progress',
+              style: AppTextStyles.sectionTitle,
             ),
+            
+            const SizedBox(height: AppDimensions.spaceM),
+            
+            // Progress Cards Grid
+            _buildProgressGrid(),
+            
+            const SizedBox(height: AppDimensions.spaceL),
+            
+            // UPDATED: Quick Actions with Browse Challenges
+            Text(
+              'Quick Actions',
+              style: AppTextStyles.sectionTitle,
+            ),
+            
+            const SizedBox(height: AppDimensions.spaceM),
+            
+            _buildQuickActionsGrid(),
           ],
         ),
       ),
     );
   }
 
-  // FIXED: Hero banner with proper white text
   Widget _buildHeroBanner() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppDimensions.spaceXXL),
+      padding: const EdgeInsets.all(AppDimensions.spaceXL),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             AppColors.amethyst600,
-            AppColors.amethyst600,
+            AppColors.exploreBlue,
           ],
         ),
         borderRadius: BorderRadius.circular(AppDimensions.radiusL),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.explore,
-            size: 48,
-            color: Colors.white,
-          ),
-          const SizedBox(height: AppDimensions.spaceM),
-          Text(
-            'Ready for your next adventure?',
-            style: AppTextStyles.heroTitle.copyWith(
+          Container(
+            width: 60,
+            height: 60,
+            decoration: const BoxDecoration(
+              color: Colors.white24,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.explore,
               color: Colors.white,
-              fontSize: 20,
+              size: 30,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spaceL),
+          const Text(
+            'Ready for your next adventure?',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppDimensions.spaceS),
-          // FIXED: Changed from heroSubtitle to explicit white text
-          Text(
+          const Text(
             'Explore nearby locations, track your journey, and compete with friends',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: Colors.white, // FIXED: was using AppTextStyles.heroSubtitle which had wrong color
+              color: Colors.white70,
+              fontWeight: FontWeight.w300,
             ),
             textAlign: TextAlign.center,
           ),
-          
-          const SizedBox(height: AppDimensions.spaceM),
-          
-          Text(
+          const SizedBox(height: AppDimensions.spaceS),
+          const Text(
             'Discover new places, track your adventures, and collect badges as you explore the world around you.',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               color: Colors.white70,
               fontWeight: FontWeight.w300,
@@ -220,88 +216,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildDiscoveryCard() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, '/map-discover');
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppDimensions.spaceL),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+  // FIXED: Explore Nearby Card with correct navigation to DiscoveryMapScreen
+  Widget _buildExploreNearbyCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDimensions.spaceL),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Map Preview Icon
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusM),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Map Preview (placeholder)
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-              ),
-              child: Stack(
-                children: [
-                  // Map-like pattern
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.green.shade100,
-                          Colors.blue.shade100,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+            child: Stack(
+              children: [
+                // Map-like background
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.green.shade100,
+                        Colors.blue.shade100,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+                // Location pin
+                const Positioned(
+                  top: 20,
+                  right: 25,
+                  child: Icon(
+                    Icons.location_pin,
+                    color: Colors.red,
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(width: AppDimensions.spaceL),
+          
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Explore Nearby',
+                  style: AppTextStyles.cardTitle,
+                ),
+                const SizedBox(height: AppDimensions.spaceXS),
+                Text(
+                  'Discover new locations, find friends, and join challenges near you',
+                  style: AppTextStyles.cardSubtitle,
+                ),
+                const SizedBox(height: AppDimensions.spaceM),
+                // FIXED: Open Map button navigates to DiscoveryMapScreen (like AllTrails)
+                InkWell(
+                  onTap: () {
+                    // Navigate to DiscoveryMapScreen - your AllTrails-like page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DiscoveryMapScreen(),
                       ),
-                    ),
-                  ),
-                  // Path line
-                  CustomPaint(
-                    size: const Size(80, 80),
-                    painter: _MapPathPainter(),
-                  ),
-                  // Location pin
-                  const Positioned(
-                    top: 20,
-                    right: 25,
-                    child: Icon(
-                      Icons.location_pin,
-                      color: Colors.red,
-                      size: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(width: AppDimensions.spaceL),
-            
-            // Trip info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Explore Nearby',
-                    style: AppTextStyles.cardTitle,
-                  ),
-                  const SizedBox(height: AppDimensions.spaceXS),
-                  Text(
-                    'Discover new locations, find friends, and join challenges near you',
-                    style: AppTextStyles.cardSubtitle,
-                  ),
-                  const SizedBox(height: AppDimensions.spaceM),
-                  Container(
+                    );
+                  },
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppDimensions.spaceM,
                       vertical: AppDimensions.spaceS,
@@ -314,396 +313,305 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.explore,
+                          Icons.map,
                           color: AppColors.amethyst600,
                           size: 16,
                         ),
-                        const SizedBox(width: AppDimensions.spaceXS),
+                        const SizedBox(width: AppDimensions.spaceS),
                         Text(
                           'Open Map',
                           style: TextStyle(
                             color: AppColors.amethyst600,
                             fontWeight: FontWeight.w600,
-                            fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            
-            // Arrow icon
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.textSecond,
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFriendsActivity() {
-    if (_friendActivities.isEmpty) {
-      return _buildEmptyFriendsActivity();
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-      ),
-      child: Column(
-        children: _friendActivities.asMap().entries.map((entry) {
-          int index = entry.key;
-          FriendActivity activity = entry.value;
-          bool isLast = index == _friendActivities.length - 1;
-          
-          return Container(
-            padding: const EdgeInsets.all(AppDimensions.spaceL),
-            decoration: BoxDecoration(
-              border: isLast ? null : Border(
-                bottom: BorderSide(
-                  color: AppColors.stroke,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.amethyst600.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    activity.avatar,
-                    color: AppColors.amethyst600,
-                    size: 20,
-                  ),
-                ),
-                
-                const SizedBox(width: AppDimensions.spaceM),
-                
-                // Activity info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.cardSubtitle,
-                          children: [
-                            TextSpan(
-                              text: activity.friendName,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            TextSpan(text: ' ${activity.activity}'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXS),
-                      Text(
-                        activity.timeAgo,
-                        style: AppTextStyles.caption,
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Activity type icon
-                Icon(
-                  _getActivityIcon(activity.activityType),
-                  color: _getActivityColor(activity.activityType),
-                  size: 20,
                 ),
               ],
             ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildEmptyFriendsActivity() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spaceXXL),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-      ),
-      child: Column(
-        children: [
+          ),
+          
+          // Arrow indicator
           Icon(
-            Icons.people_outline,
-            size: 48,
+            Icons.chevron_right,
             color: AppColors.textSecond,
           ),
-          const SizedBox(height: AppDimensions.spaceM),
-          Text(
-            'No friend activity yet',
-            style: AppTextStyles.cardTitle,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppDimensions.spaceS),
-          Text(
-            'Add friends to see their latest adventures and achievements',
-            style: AppTextStyles.cardSubtitle,
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildProgressSnapshot() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-      ),
-      child: Column(
-        children: [
-          // Progress stats grid - UPDATED FOR NEW COLORS
-          Row(
-            children: [
-              Expanded(
-                child: _ProgressStatCard(
-                  icon: Icons.map,
-                  title: 'Trips',
-                  value: '${_progressData.tripsThisWeek}',
-                  subtitle: 'this week',
-                  color: AppColors.exploreBlue, // Updated color
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceM),
-              Expanded(
-                child: _ProgressStatCard(
-                  icon: Icons.straighten,
-                  title: 'Distance',
-                  value: '${_progressData.totalDistance}km',
-                  subtitle: 'total',
-                  color: AppColors.crawlCrimson, // Updated color
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: AppDimensions.spaceM),
-          
-          Row(
-            children: [
-              Expanded(
-                child: _ProgressStatCard(
-                  icon: Icons.local_fire_department,
-                  title: 'Streak',
-                  value: '${_progressData.currentStreak}',
-                  subtitle: 'days',
-                  color: AppColors.warning, // Keep warning color for streak
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceM),
-              Expanded(
-                child: _ProgressStatCard(
-                  icon: Icons.emoji_events,
-                  title: 'Badges',
-                  value: '${_progressData.badgesEarned}',
-                  subtitle: 'earned',
-                  color: AppColors.sportAmber, // Updated color
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
-      ),
-      child: Column(
-        children: [
-          _QuickActionTile(
-            icon: Icons.add_location,
-            title: 'Create New Trip',
-            subtitle: 'Plan your next adventure',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MapTripCreationScreen(),
-                ),
-              );
-            },
-          ),
-          
-          const Divider(),
-          
-          _QuickActionTile(
-            icon: Icons.leaderboard,
-            title: 'View Leaderboard',
-            subtitle: 'See how you rank',
-            onTap: () {
-              Navigator.pushNamed(context, '/leaderboard');
-            },
-          ),
-          
-          const Divider(),
-          
-          _QuickActionTile(
-            icon: Icons.people,
-            title: 'Find Friends',
-            subtitle: 'Connect with other explorers',
-            onTap: () {
-              Navigator.pushNamed(context, '/friends');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getActivityIcon(String activityType) {
-    switch (activityType) {
+  Widget _buildActivityCard(FriendActivity activity) {
+    IconData activityIcon;
+    Color activityColor;
+    
+    switch (activity.activityType) {
       case 'trip_completed':
-        return Icons.check_circle;
+        activityIcon = Icons.check_circle;
+        activityColor = AppColors.success;
+        break;
       case 'badge_earned':
-        return Icons.emoji_events;
+        activityIcon = Icons.emoji_events;
+        activityColor = AppColors.warning;
+        break;
       case 'challenge_started':
-        return Icons.flag;
+        activityIcon = Icons.flag;
+        activityColor = AppColors.amethyst600;
+        break;
       default:
-        return Icons.circle;
+        activityIcon = Icons.info;
+        activityColor = AppColors.textSecond;
     }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
+      padding: const EdgeInsets.all(AppDimensions.spaceM),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Friend Avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.amethyst600.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              activity.avatar,
+              color: AppColors.amethyst600,
+              size: 20,
+            ),
+          ),
+          
+          const SizedBox(width: AppDimensions.spaceM),
+          
+          // Activity info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: AppTextStyles.cardSubtitle,
+                    children: [
+                      TextSpan(
+                        text: activity.friendName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      TextSpan(text: ' ${activity.activity}'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  activity.timeAgo,
+                  style: AppTextStyles.caption,
+                ),
+              ],
+            ),
+          ),
+          
+          // Activity type indicator
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: activityColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              activityIcon,
+              color: activityColor,
+              size: 16,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Color _getActivityColor(String activityType) {
-    switch (activityType) {
-      case 'trip_completed':
-        return AppColors.success;
-      case 'badge_earned':
-        return AppColors.sportAmber; // Updated for new system
-      case 'challenge_started':
-        return AppColors.amethyst600;
-      default:
-        return AppColors.textSecond;
-    }
+  Widget _buildProgressGrid() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildProgressCard(
+            'Trips\nthis week',
+            _progressData.tripsThisWeek.toString(),
+            Icons.flag,
+            AppColors.info,
+          ),
+        ),
+        const SizedBox(width: AppDimensions.spaceM),
+        Expanded(
+          child: _buildProgressCard(
+            'Distance\ntotal',
+            '${_progressData.totalDistance}km',
+            Icons.straighten,
+            AppColors.error,
+          ),
+        ),
+      ],
+    );
   }
-}
 
-// Helper Widgets
-class _ProgressStatCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final String subtitle;
-  final Color color;
-
-  const _ProgressStatCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildProgressCard(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceL),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, color: color, size: 24),
-          const SizedBox(height: AppDimensions.spaceS),
+          const SizedBox(height: AppDimensions.spaceM),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
+          const SizedBox(height: AppDimensions.spaceS),
           Text(
-            title,
+            label,
             style: AppTextStyles.caption.copyWith(
+              color: color,
               fontWeight: FontWeight.w600,
             ),
-          ),
-          Text(
-            subtitle,
-            style: AppTextStyles.caption.copyWith(fontSize: 10),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
-}
 
-class _QuickActionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+  // UPDATED: Quick Actions with Browse Challenges added
+  Widget _buildQuickActionsGrid() {
+    return Column(
+      children: [
+        // Row 1: Create New Trip & Browse Challenges
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickActionCard(
+                'Create New Trip',
+                'Plan your next adventure',
+                Icons.add_location_alt,
+                AppColors.amethyst600,
+                () {
+                  Navigator.pushNamed(context, '/trip-create');
+                },
+              ),
+            ),
+            const SizedBox(width: AppDimensions.spaceM),
+            Expanded(
+              child: _buildQuickActionCard(
+                'Browse Challenges',
+                'Join competitions',
+                Icons.emoji_events,
+                AppColors.warning,
+                () {
+                  // Navigate to challenges
+                  Navigator.pushNamed(context, '/challenges');
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppDimensions.spaceM),
+        // Row 2: View Leaderboard & Find Friends
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickActionCard(
+                'View Leaderboard',
+                'See how you rank',
+                Icons.leaderboard,
+                AppColors.info,
+                () {
+                  Navigator.pushNamed(context, '/leaderboard');
+                },
+              ),
+            ),
+            const SizedBox(width: AppDimensions.spaceM),
+            Expanded(
+              child: _buildQuickActionCard(
+                'Find Friends',
+                'Connect with others',
+                Icons.people,
+                AppColors.success,
+                () {
+                  Navigator.pushNamed(context, '/friend-search');
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
-  const _QuickActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
+  Widget _buildQuickActionCard(String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceS),
-        child: Row(
+      borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+      child: Container(
+        padding: const EdgeInsets.all(AppDimensions.spaceL),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               padding: const EdgeInsets.all(AppDimensions.spaceM),
               decoration: BoxDecoration(
-                color: AppColors.amethyst600.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppDimensions.spaceM),
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: AppColors.amethyst600,
+                color: color,
                 size: 24,
               ),
             ),
-            
-            const SizedBox(width: AppDimensions.spaceL),
-            
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTextStyles.cardTitle),
-                  Text(subtitle, style: AppTextStyles.cardSubtitle),
-                ],
-              ),
+            const SizedBox(height: AppDimensions.spaceM),
+            Text(
+              title,
+              style: AppTextStyles.cardTitle.copyWith(fontSize: 16),
             ),
-            
+            const SizedBox(height: AppDimensions.spaceXS),
+            Text(
+              subtitle,
+              style: AppTextStyles.cardSubtitle.copyWith(fontSize: 12),
+            ),
+            const SizedBox(height: AppDimensions.spaceM),
             Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.textSecond,
+              Icons.arrow_forward,
+              color: color,
               size: 16,
             ),
           ],
@@ -711,28 +619,6 @@ class _QuickActionTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MapPathPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue.withOpacity(0.6)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    path.moveTo(size.width * 0.2, size.height * 0.8);
-    path.quadraticBezierTo(
-      size.width * 0.5, size.height * 0.2,
-      size.width * 0.8, size.height * 0.6,
-    );
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // Data Models

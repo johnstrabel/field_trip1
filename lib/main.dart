@@ -15,6 +15,7 @@ import 'theme/app_theme.dart';
 // NEW: Advanced feature models
 import 'models/group_trip.dart';
 import 'models/infection_game.dart';
+import 'models/challenge.dart' as challenge_model;
 
 // Existing screens that we know work
 import 'screens/badge_wall_screen.dart';
@@ -102,6 +103,15 @@ Future<void> main() async {
     Hive.registerAdapter(GameBoundaryAdapter());        // typeId: 19
     Hive.registerAdapter(LatLngAdapter());              // typeId: 20
     Hive.registerAdapter(GameSessionAdapter());         // typeId: 21
+    
+    // NEW: Challenge adapters
+    Hive.registerAdapter(challenge_model.ChallengeAdapter());           // typeId: 22
+    Hive.registerAdapter(challenge_model.ChallengeTypeAdapter());       // typeId: 23  
+    Hive.registerAdapter(challenge_model.ChallengeStatusAdapter());     // typeId: 24
+    Hive.registerAdapter(challenge_model.ChallengeMilestoneAdapter());  // typeId: 25
+    Hive.registerAdapter(challenge_model.ChallengeParticipantAdapter()); // typeId: 26
+    Hive.registerAdapter(challenge_model.ActivityTypeAdapter());        // typeId: 27
+    Hive.registerAdapter(challenge_model.ChallengeActivityAdapter());   // typeId: 28
 
     // Open existing boxes
     await Hive.openBox<model.Trip>('trips');
@@ -114,6 +124,10 @@ Future<void> main() async {
     await Hive.openBox<SharedScoreCard>('shared_scorecards');
     await Hive.openBox<GameSession>('infection_games');
     await Hive.openBox<PlayerState>('player_states');
+    
+    // NEW: Open challenge boxes
+    await Hive.openBox<challenge_model.Challenge>('challenges');
+    await Hive.openBox<challenge_model.ChallengeActivity>('challenge_activities');
 
     // Perform data migration if needed
     await DataMigration.performMigrationIfNeeded();
@@ -122,6 +136,7 @@ Future<void> main() async {
     debugPrint('📦 Loaded ${Hive.box<model.Trip>('trips').length} trips');
     debugPrint('🎮 Loaded ${Hive.box<GroupTrip>('group_trips').length} group trips');
     debugPrint('🦠 Loaded ${Hive.box<GameSession>('infection_games').length} infection games');
+    debugPrint('🏆 Loaded ${Hive.box<challenge_model.Challenge>('challenges').length} challenges');
 
   } catch (e) {
     debugPrint('❌ Error during initialization: $e');
@@ -140,6 +155,8 @@ Future<void> main() async {
       await Hive.deleteBoxFromDisk('shared_scorecards');
       await Hive.deleteBoxFromDisk('infection_games');
       await Hive.deleteBoxFromDisk('player_states');
+      await Hive.deleteBoxFromDisk('challenges');
+      await Hive.deleteBoxFromDisk('challenge_activities');
       
       // Re-initialize
       await Hive.initFlutter();
@@ -170,6 +187,15 @@ Future<void> main() async {
       Hive.registerAdapter(LatLngAdapter());
       Hive.registerAdapter(GameSessionAdapter());
       
+      // Re-register challenge adapters
+      Hive.registerAdapter(challenge_model.ChallengeAdapter());
+      Hive.registerAdapter(challenge_model.ChallengeTypeAdapter());
+      Hive.registerAdapter(challenge_model.ChallengeStatusAdapter());
+      Hive.registerAdapter(challenge_model.ChallengeMilestoneAdapter());
+      Hive.registerAdapter(challenge_model.ChallengeParticipantAdapter());
+      Hive.registerAdapter(challenge_model.ActivityTypeAdapter());
+      Hive.registerAdapter(challenge_model.ChallengeActivityAdapter());
+      
       // Re-open all boxes
       await Hive.openBox<model.Trip>('trips');
       await Hive.openBox<model.Badge>('badges');
@@ -179,10 +205,13 @@ Future<void> main() async {
       await Hive.openBox<SharedScoreCard>('shared_scorecards');
       await Hive.openBox<GameSession>('infection_games');
       await Hive.openBox<PlayerState>('player_states');
+      await Hive.openBox<challenge_model.Challenge>('challenges');
+      await Hive.openBox<challenge_model.ChallengeActivity>('challenge_activities');
       
       // Create sample data for testing
       await DataMigration.createSampleDataNewSystem();
       await _createSampleAdvancedData();
+      await _createSampleChallengeData();
       
       debugPrint('🔄 Fresh start completed with sample data');
     } catch (resetError) {
@@ -272,6 +301,64 @@ Future<void> _createSampleAdvancedData() async {
     
   } catch (e) {
     debugPrint('❌ Failed to create sample advanced data: $e');
+  }
+}
+
+// NEW: Create sample challenge data
+Future<void> _createSampleChallengeData() async {
+  try {
+    final challengeBox = Hive.box<challenge_model.Challenge>('challenges');
+    final activityBox = Hive.box<challenge_model.ChallengeActivity>('challenge_activities');
+    
+    // Sample challenges
+    final exploreChallengeTemplate = challenge_model.ChallengeHelper.createFromTemplate(
+      challenge_model.ChallengeType.explore,
+      0,
+      'current_user',
+      DateTime.now(),
+      DateTime.now().add(const Duration(days: 30)),
+    );
+    
+    final crawlChallengeTemplate = challenge_model.ChallengeHelper.createFromTemplate(
+      challenge_model.ChallengeType.crawl,
+      0,
+      'current_user',
+      DateTime.now(),
+      DateTime.now().add(const Duration(days: 14)),
+    );
+    
+    final sportChallengeTemplate = challenge_model.ChallengeHelper.createFromTemplate(
+      challenge_model.ChallengeType.sport,
+      0,
+      'current_user',
+      DateTime.now(),
+      DateTime.now().add(const Duration(days: 21)),
+    );
+    
+    await challengeBox.put(exploreChallengeTemplate.id, exploreChallengeTemplate);
+    await challengeBox.put(crawlChallengeTemplate.id, crawlChallengeTemplate);
+    await challengeBox.put(sportChallengeTemplate.id, sportChallengeTemplate);
+    
+    // Sample challenge activities
+    final sampleActivity = challenge_model.ChallengeActivity(
+      id: 'activity_${DateTime.now().millisecondsSinceEpoch}',
+      challengeId: exploreChallengeTemplate.id,
+      userId: 'current_user',
+      userName: 'You',
+      description: 'Joined the City Explorer challenge',
+      timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+      avatarIconCodePoint: Icons.person.codePoint.toString(),
+      activityType: challenge_model.ActivityType.joined,
+    );
+    
+    await activityBox.put(sampleActivity.id, sampleActivity);
+    
+    debugPrint('🏆 Created sample challenge data:');
+    debugPrint('   • 3 challenges (Explore, Crawl, Sport)');
+    debugPrint('   • 1 challenge activity');
+    
+  } catch (e) {
+    debugPrint('❌ Failed to create sample challenge data: $e');
   }
 }
 
@@ -524,6 +611,15 @@ class AdvancedNavigationHelper {
     return Navigator.pushNamed(context, '/bar-wait-report-venue?venueId=$venueId');
   }
 
+  // Challenge navigation
+  static Future<void> navigateToChallengeDetail(BuildContext context, String challengeId) {
+    return Navigator.pushNamed(context, '/challenge-detail?id=$challengeId');
+  }
+  
+  static Future<void> navigateToChallengeLeaderboard(BuildContext context, String challengeId) {
+    return Navigator.pushNamed(context, '/challenge-leaderboard?id=$challengeId');
+  }
+
   // Quick action menus
   static void showGroupTripMenu(BuildContext context) {
     showModalBottomSheet(
@@ -603,6 +699,49 @@ class AdvancedNavigationHelper {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/infection-results');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  static void showChallengeMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Challenges',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.add_task),
+              title: const Text('Create Challenge'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/challenge-create');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.emoji_events),
+              title: const Text('Browse Challenges'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/challenges');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.leaderboard),
+              title: const Text('Leaderboards'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/leaderboard');
               },
             ),
           ],

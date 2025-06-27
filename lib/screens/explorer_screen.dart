@@ -1,4 +1,5 @@
-// lib/screens/explorer_screen.dart - Updated for 3-Type System
+// lib/screens/explorer_screen.dart - FIXED VERSION
+// Fixed FilterChipRow property names and added Live Adventure
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -7,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../widgets/filter_chip_row.dart';
 import 'map_trip_creation_screen.dart';
 import 'trip_detail_screen.dart';
+import 'live_tracking_screen.dart'; // Import for Live Adventure
 
 class ExplorerScreen extends StatefulWidget {
   const ExplorerScreen({Key? key}) : super(key: key);
@@ -30,13 +32,81 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     }
   }
 
+  // NEW: Start Live Adventure - immediate GPS tracking without planning
   Future<void> _startLiveAdventure() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Live Adventure mode coming soon! Use "Plan New Trip" for now.'),
-        backgroundColor: AppColors.sportAmber, // Updated color
+    // Show adventure type selection dialog
+    final selectedType = await showDialog<model.CoreType>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🚀 Start Live Adventure'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('What type of adventure are you starting?'),
+            const SizedBox(height: 16),
+            ...model.CoreType.values.map((type) {
+              final helper = TripTypeHelper.fromCoreType(type);
+              return Card(
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: helper.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(helper.icon, color: helper.color),
+                  ),
+                  title: Text(helper.displayName),
+                  subtitle: Text(_getTypeDescription(type)),
+                  onTap: () => Navigator.pop(context, type),
+                ),
+              );
+            }),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
+
+    if (selectedType != null) {
+      // Create a spontaneous trip for Live Adventure
+      final liveTrip = model.Trip(
+        id: 'live_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Live ${TripTypeHelper.fromCoreType(selectedType).displayName} Adventure',
+        waypoints: [], // No pre-planned waypoints for live adventures
+        createdAt: DateTime.now(),
+        coreType: selectedType,
+        subMode: 'live_adventure',
+      );
+
+      // Save the trip
+      final tripBox = Hive.box<model.Trip>('trips');
+      await tripBox.put(liveTrip.id, liveTrip);
+
+      // Immediately start live tracking
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LiveTrackingScreen(trip: liveTrip),
+        ),
+      );
+    }
+  }
+
+  String _getTypeDescription(model.CoreType type) {
+    switch (type) {
+      case model.CoreType.explore:
+        return 'Discover new places and sights';
+      case model.CoreType.crawl:
+        return 'Nightlife and social adventures';
+      case model.CoreType.sport:
+        return 'Fitness and competitive activities';
+    }
   }
 
   Future<void> _openTripDetail(BuildContext context, model.Trip trip) async {
@@ -44,9 +114,9 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     final badge = badgeBox.values
         .where((b) => b.tripId == trip.id)
         .isNotEmpty 
-        ? badgeBox.values.where((b) => b.tripId == trip.id).first 
+        ? badgeBox.values.firstWhere((b) => b.tripId == trip.id)
         : null;
-
+    
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -55,149 +125,327 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     );
   }
 
-  List<model.Trip> _filterTrips(List<model.Trip> trips) {
-    switch (_selectedFilter) {
-      case 'Planned':
-        return trips.where((trip) => !trip.completed).toList();
-      case 'In Progress':
-        return []; // TODO: Implement in-progress tracking
-      case 'Completed':
-        return trips.where((trip) => trip.completed).toList();
-      default:
-        return trips;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with Quick Actions
-            _buildHeader(),
-            
-            // Filter Section
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.spaceL,
-                vertical: AppDimensions.spaceM,
+      appBar: AppBar(
+        title: const Text('Explorer'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+      ),
+      body: Column(
+        children: [
+          // Header with both action buttons
+          Container(
+            padding: const EdgeInsets.all(AppDimensions.spaceL),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Plan, track, and complete your adventures',
+                  style: AppTextStyles.cardSubtitle,
+                ),
+                const SizedBox(height: AppDimensions.spaceL),
+                
+                // Action Buttons Row
+                Row(
+                  children: [
+                    // Plan New Trip Button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _createNewTrip(context),
+                        icon: const Icon(Icons.add_location_alt),
+                        label: const Text('Plan New Trip'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.amethyst600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceM),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spaceM),
+                    // NEW: Live Adventure Button
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _startLiveAdventure,
+                        icon: const Icon(Icons.play_circle, color: AppColors.success),
+                        label: const Text(
+                          'Live Adventure',
+                          style: TextStyle(color: AppColors.success),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.success),
+                          padding: const EdgeInsets.symmetric(vertical: AppDimensions.spaceM),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: AppDimensions.spaceM),
+                
+                // Info card explaining Live Adventure
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.spaceM),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                    border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.success,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppDimensions.spaceM),
+                      Expanded(
+                        child: Text(
+                          'Live Adventure: Start GPS tracking instantly for spontaneous exploration!',
+                          style: AppTextStyles.cardSubtitle.copyWith(
+                            color: AppColors.success,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // FIXED: Filter Row with correct property names
+          FilterChipRow(
+            items: _filterOptions,           // FIXED: Was 'options', now 'items'
+            selected: _selectedFilter,       // FIXED: Was 'selectedOption', now 'selected'
+            onSelect: (option) {             // FIXED: Was 'onOptionSelected', now 'onSelect'
+              setState(() {
+                _selectedFilter = option;
+              });
+            },
+          ),
+          
+          const SizedBox(height: AppDimensions.spaceM),
+          
+          // Trip List
+          Expanded(
+            child: ValueListenableBuilder<Box<model.Trip>>(
+              valueListenable: Hive.box<model.Trip>('trips').listenable(),
+              builder: (context, box, child) {
+                final trips = box.values.toList();
+                final filteredTrips = _filterTrips(trips);
+                
+                if (filteredTrips.isEmpty) {
+                  return _buildEmptyState();
+                }
+                
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceL),
+                  itemCount: filteredTrips.length,
+                  itemBuilder: (context, index) {
+                    final trip = filteredTrips[index];
+                    return _buildTripCard(trip);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<model.Trip> _filterTrips(List<model.Trip> trips) {
+    if (_selectedFilter == 'All') return trips;
+    
+    return trips.where((trip) {
+      switch (_selectedFilter) {
+        case 'Planned':
+          return !trip.completed;
+        case 'In Progress':
+          // For now, assume in progress means created recently but not completed
+          return !trip.completed && 
+                 DateTime.now().difference(trip.createdAt).inHours < 24;
+        case 'Completed':
+          return trip.completed;
+        default:
+          return true;
+      }
+    }).toList();
+  }
+
+  Widget _buildTripCard(model.Trip trip) {
+    final typeHelper = TripTypeHelper.fromTrip(trip);
+    final isLiveAdventure = trip.subMode == 'live_adventure';
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _openTripDetail(context, trip),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusL),
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.spaceL),
+          child: Row(
+            children: [
+              // Trip Type Icon
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: typeHelper.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusM),
+                ),
+                child: Icon(
+                  typeHelper.icon,
+                  color: typeHelper.color,
+                  size: 24,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              
+              const SizedBox(width: AppDimensions.spaceL),
+              
+              // Trip Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          typeHelper.displayName,
+                          style: AppTextStyles.caption.copyWith(
+                            color: typeHelper.color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.spaceS),
+                        Text(
+                          '• ${trip.waypoints.length} waypoints',
+                          style: AppTextStyles.caption,
+                        ),
+                        const SizedBox(width: AppDimensions.spaceS),
+                        if (isLiveAdventure)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.success,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'LIVE',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          '• ${trip.subMode}',
+                          style: AppTextStyles.caption,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spaceS),
+                    Text(
+                      trip.title,
+                      style: AppTextStyles.cardTitle,
+                    ),
+                    Text(
+                      _formatTripDate(trip.createdAt),
+                      style: AppTextStyles.cardSubtitle,
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Status indicator
+              Column(
                 children: [
-                  Text(
-                    'Your Adventures',
-                    style: AppTextStyles.sectionTitle,
-                  ),
-                  const SizedBox(height: AppDimensions.spaceM),
-                  FilterChipRow(
-                    items: _filterOptions,
-                    selected: _selectedFilter,
-                    onSelect: (selected) {
-                      setState(() {
-                        _selectedFilter = selected;
-                      });
-                    },
-                  ),
+                  if (trip.completed) ...[
+                    Icon(
+                      Icons.check_circle,
+                      color: AppColors.success,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppDimensions.spaceXS),
+                    Text(
+                      'Completed',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ] else if (isLiveAdventure) ...[
+                    Icon(
+                      Icons.play_circle,
+                      color: AppColors.success,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppDimensions.spaceXS),
+                    Text(
+                      'Ready',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ] else ...[
+                    Icon(
+                      Icons.radio_button_unchecked,
+                      color: AppColors.textSecond,
+                      size: 24,
+                    ),
+                    const SizedBox(height: AppDimensions.spaceXS),
+                    Text(
+                      'Planned',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecond,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  
+                  if (trip.badgeEarned) ...[
+                    const SizedBox(height: AppDimensions.spaceS),
+                    Icon(
+                      Icons.emoji_events,
+                      color: AppColors.warning,
+                      size: 16,
+                    ),
+                  ],
                 ],
               ),
-            ),
-            
-            // Trip List
-            Expanded(
-              child: ValueListenableBuilder(
-                valueListenable: Hive.box<model.Trip>('trips').listenable(),
-                builder: (context, Box<model.Trip> box, _) {
-                  final trips = box.values.toList()
-                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                  final filteredTrips = _filterTrips(trips);
-                  
-                  if (trips.isEmpty) {
-                    return _buildEmptyState();
-                  }
-                  
-                  if (filteredTrips.isEmpty && _selectedFilter != 'All') {
-                    return _buildNoFilterResultsState();
-                  }
-                  
-                  return _buildTripList(filteredTrips);
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spaceL),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Explorer',
-            style: AppTextStyles.heroTitle.copyWith(fontSize: 28),
-          ),
-          const SizedBox(height: AppDimensions.spaceS),
-          Text(
-            'Plan, track, and complete your adventures',
-            style: AppTextStyles.cardSubtitle,
-          ),
-          const SizedBox(height: AppDimensions.spaceL),
-          
-          // Quick Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _createNewTrip(context),
-                  icon: const Icon(Icons.add_location),
-                  label: const Text('Plan New Trip'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.amethyst600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppDimensions.spaceM,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppDimensions.spaceM),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _startLiveAdventure,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Live Adventure'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.amethyst600,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppDimensions.spaceM,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
+    if (_selectedFilter != 'All') {
+      return _buildNoFilterResultsState();
+    }
+    
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceXXL),
       child: Center(
@@ -205,7 +453,7 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.explore_outlined,
+              Icons.explore,
               size: 64,
               color: AppColors.textSecond,
             ),
@@ -228,6 +476,22 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.amethyst600,
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.spaceXL,
+                  vertical: AppDimensions.spaceM,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spaceM),
+            OutlinedButton.icon(
+              onPressed: _startLiveAdventure,
+              icon: const Icon(Icons.play_circle, color: AppColors.success),
+              label: const Text(
+                'Start Live Adventure',
+                style: TextStyle(color: AppColors.success),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.success),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppDimensions.spaceXL,
                   vertical: AppDimensions.spaceM,
@@ -291,210 +555,18 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
     }
   }
 
-  Widget _buildTripList(List<model.Trip> trips) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spaceL,
-        vertical: AppDimensions.spaceM,
-      ),
-      itemCount: trips.length,
-      itemBuilder: (context, index) {
-        final trip = trips[index];
-        return _TripCard(
-          trip: trip,
-          onTap: () => _openTripDetail(context, trip),
-        );
-      },
-    );
-  }
-}
-
-class _TripCard extends StatelessWidget {
-  final model.Trip trip;
-  final VoidCallback onTap;
-
-  const _TripCard({
-    required this.trip,
-    required this.onTap,
-  });
-
-  String _formatDate(DateTime date) {
+  String _formatTripDate(DateTime date) {
     final now = DateTime.now();
-    final difference = now.difference(date).inDays;
+    final difference = now.difference(date);
     
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Yesterday';
-    if (difference < 7) return '${difference}d ago';
-    if (difference < 30) return '${(difference / 7).round()}w ago';
-    return '${(difference / 30).round()}mo ago';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final typeHelper = TripTypeHelper.fromTrip(trip);
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppDimensions.spaceM),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-            border: Border.all(
-              color: typeHelper.color.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.spaceM),
-            child: Row(
-              children: [
-                // Trip Type Icon
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: typeHelper.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusM),
-                  ),
-                  child: Icon(
-                    typeHelper.icon,
-                    color: typeHelper.color,
-                    size: 24,
-                  ),
-                ),
-                
-                const SizedBox(width: AppDimensions.spaceM),
-                
-                // Trip Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        trip.title,
-                        style: AppTextStyles.cardTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXS),
-                      Row(
-                        children: [
-                          Text(
-                            typeHelper.displayName,
-                            style: AppTextStyles.caption.copyWith(
-                              color: typeHelper.color,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: AppDimensions.spaceS),
-                          Text(
-                            '•',
-                            style: AppTextStyles.caption,
-                          ),
-                          const SizedBox(width: AppDimensions.spaceS),
-                          Text(
-                            '${trip.waypoints.length} waypoints',
-                            style: AppTextStyles.caption,
-                          ),
-                          // Show submode if not standard
-                          if (trip.subMode != 'standard') ...[
-                            const SizedBox(width: AppDimensions.spaceS),
-                            Text(
-                              '•',
-                              style: AppTextStyles.caption,
-                            ),
-                            const SizedBox(width: AppDimensions.spaceS),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppDimensions.spaceXS,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: typeHelper.color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                trip.subMode,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: typeHelper.color,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXS),
-                      Text(
-                        _formatDate(trip.createdAt),
-                        style: AppTextStyles.caption,
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Status Indicators
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (trip.completed) ...[
-                      Icon(
-                        Icons.check_circle,
-                        color: AppColors.success,
-                        size: 20,
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXS),
-                      Text(
-                        'Completed',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ] else ...[
-                      Icon(
-                        Icons.schedule,
-                        color: AppColors.warning,
-                        size: 20,
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXS),
-                      Text(
-                        'Planned',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.warning,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                    
-                    if (trip.badgeEarned) ...[
-                      const SizedBox(height: AppDimensions.spaceS),
-                      Icon(
-                        Icons.emoji_events,
-                        color: typeHelper.color,
-                        size: 16,
-                      ),
-                    ],
-                    
-                    // Show scorecard indicator for sport trips
-                    if (trip.currentType == model.CoreType.sport && trip.completed) ...[
-                      const SizedBox(height: AppDimensions.spaceXS),
-                      Icon(
-                        Icons.leaderboard,
-                        color: typeHelper.color,
-                        size: 14,
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 }
